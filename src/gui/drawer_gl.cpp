@@ -355,11 +355,18 @@ void Drawer_gl::Implementation::draw(
             visible_area,
         const float scale)
 {
-    my_assert(is_initialized(), "drawer cannot draw before initialization");
-    my_assert(m_yuv_file, "cannot draw when no YUV file is attached to drawer");
+    {
+        static int i = 0;
+        std::cerr << __func__ << ' ' << i++ << std::endl;
+    }
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if (!(is_initialized() && m_yuv_file))
+    {
+        return;
+    }
 
     const Index zoom_levels_count =
             get_picture_zoom_levels_count(m_yuv_file->get_resolution());
@@ -367,8 +374,8 @@ void Drawer_gl::Implementation::draw(
     const Index zoom_level = zoom_levels_count - 1 - unzoom_steps_count;
     const Vector<Unit::pixel> resolution = m_yuv_file->get_resolution();
     const Vector<Unit::pixel> scaled_picture_size(
-                static_cast<Index>(std::ceil(resolution.x() * scale)),
-                static_cast<Index>(std::ceil(resolution.y() * scale)));
+            static_cast<Length>(std::ceil(resolution.x() * scale)),
+            static_cast<Length>(std::ceil(resolution.y() * scale)));
     const Coordinates<Unit::pixel, Reference_point::scaled_picture>
             area_to_be_drawn(
                 std::min(visible_area.get_end().x(), scaled_picture_size.x()),

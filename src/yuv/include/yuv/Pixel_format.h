@@ -423,6 +423,19 @@ const Pixel_format rgb_24bpp
     }
 };
 
+constexpr auto valid_planes_count_range =
+    make_inclusive_value_range<Index>(1, 16);
+constexpr auto valid_rows_in_plane_count_range =
+    make_inclusive_value_range<Index>(1, 4);
+constexpr auto valid_entries_in_row_count_range =
+    make_inclusive_value_range<Index>(1, 4);
+constexpr auto valid_bit_width_range =
+    make_inclusive_value_range<Bit_position>(1, 32);
+constexpr auto valid_components_count_range =
+    make_inclusive_value_range<Index>(1, 4);
+constexpr auto valid_macropixel_size_range =
+    make_inclusive_value_range<Index>(1, 4);
+
 class Precalculated_pixel_format
 {
 private:
@@ -453,10 +466,8 @@ private:
     bool m_is_expanded;
 
 public:
-    Precalculated_pixel_format();
-    Precalculated_pixel_format(const Pixel_format &pixel_format);
-    void clear();
-    void recalculate(const Pixel_format &pixel_format);
+    static std::optional<Precalculated_pixel_format> create(
+        const Pixel_format& pixel_format);
 
     const Pixel_format &get_pixel_format() const
     {
@@ -568,14 +579,8 @@ private:
 class Precalculated_buffer_parameters : public Precalculated_pixel_format
 {
 public:
-    Precalculated_buffer_parameters();
-    Precalculated_buffer_parameters(
-            const Pixel_format &format,
-            const Vector<Unit::pixel> &resolution);
-    void recalculate(
-            const Pixel_format &format,
-            const Vector<Unit::pixel> &resolution);
-    void clear();
+    static std::optional<Precalculated_buffer_parameters> create(
+        const Pixel_format& format, const Vector<Unit::pixel>& resolution);
 
     const Vector<Unit::pixel> &get_resolution() const
     {

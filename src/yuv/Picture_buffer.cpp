@@ -71,7 +71,8 @@ void Picture_buffer::allocate(
         const Vector<Unit::pixel> &resolution,
         const Pixel_format &pixel_format)
 {
-    m_parameters.recalculate(pixel_format, resolution);
+    m_parameters =
+        *Precalculated_buffer_parameters::create(pixel_format, resolution);
     m_data.resize(m_parameters.get_buffer_size().get_bytes());
 }
 //------------------------------------------------------------------------------

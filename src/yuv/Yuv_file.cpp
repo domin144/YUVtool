@@ -84,7 +84,7 @@ Vector<Unit::pixel> Yuv_file::get_resolution() const
 Bit_position Yuv_file::get_frame_size()
 {
     recalculate_parameters();
-    return m_buffer_parameters.get_buffer_size();
+    return m_buffer_parameters->get_buffer_size();
 }
 //------------------------------------------------------------------------------
 Index Yuv_file::get_frames_count()
@@ -112,7 +112,7 @@ Picture_buffer Yuv_file::extract_buffer(
 {
     recalculate_parameters();
     const Vector<Unit::pixel> macropixel_size =
-            m_buffer_parameters.get_macropixel_size();
+            m_buffer_parameters->get_macropixel_size();
     check_range(0, picture_number, get_frames_count());
     check_range(0, start.x(), end.x());
     check_range(0, start.y(), end.y());
@@ -141,19 +141,19 @@ Picture_buffer Yuv_file::extract_buffer(
     const Vector<Unit::macropixel> buffer_size_in_macropixels =
             buffer.get_parameters().get_size_in_macropixels();
     const Vector<Unit::macropixel> picture_size_in_macropixels =
-            m_buffer_parameters.get_size_in_macropixels();
+            m_buffer_parameters->get_size_in_macropixels();
     const Bit_position picture_size = get_frame_size();
     const Bit_position picture_offset = picture_number * picture_size;
 
     const Index planes_count = pixel_format.planes.size();
     for(Index plane_idx = 0; plane_idx < planes_count; plane_idx++)
     {
-        Bit_position plane_offset =
-                m_buffer_parameters.get_plane_offset(plane_idx);
+        const Bit_position plane_offset =
+            m_buffer_parameters->get_plane_offset(plane_idx);
         const Index pixel_rows_in_macropixel_in_plane =
-                m_buffer_parameters.get_entry_rows_count_in_plane(plane_idx);
+            m_buffer_parameters->get_entry_rows_count_in_plane(plane_idx);
         const Bit_position macropixel_row_in_plane_size_in_bits =
-                m_buffer_parameters.get_macropixel_row_in_plane_size(plane_idx);
+            m_buffer_parameters->get_macropixel_row_in_plane_size(plane_idx);
         for(Index buffer_macropixel_row = 0;
             buffer_macropixel_row < buffer_size_in_macropixels.y();
             buffer_macropixel_row++)
@@ -172,7 +172,8 @@ Picture_buffer Yuv_file::extract_buffer(
                 row_in_macropixel++)
             {
                 const Bit_position bits_per_entry_in_row_in_plane =
-                        m_buffer_parameters.get_bits_per_macropixel_in_row_in_plane(
+                    m_buffer_parameters
+                        ->get_bits_per_macropixel_in_row_in_plane(
                             plane_idx, row_in_macropixel);
                 const Bit_position x_position_offset =
                         cast_to_macropixels(
@@ -217,7 +218,7 @@ void Yuv_file::insert_buffer(
         const Coordinates<Unit::pixel, Reference_point::picture> &end)
 {
     const Vector<Unit::pixel> macropixel_size =
-            m_buffer_parameters.get_macropixel_size();
+            m_buffer_parameters->get_macropixel_size();
     check_range(0, picture_number, get_frames_count());
     check_range(0, start.x(), end.x());
     check_range(0, start.y(), end.y());
@@ -251,19 +252,19 @@ void Yuv_file::insert_buffer(
     const Vector<Unit::macropixel> buffer_size_in_macropixels =
             buffer.get_parameters().get_size_in_macropixels();
     const Vector<Unit::macropixel> picture_size_in_macropixels =
-            m_buffer_parameters.get_size_in_macropixels();
+            m_buffer_parameters->get_size_in_macropixels();
     const Bit_position picture_size = get_frame_size();
     const Bit_position picture_offset = picture_number * picture_size;
 
     const Index planes_count = pixel_format.planes.size();
     for(Index plane_idx = 0; plane_idx < planes_count; plane_idx++)
     {
-        Bit_position plane_offset =
-                m_buffer_parameters.get_plane_offset(plane_idx);
+        const Bit_position plane_offset =
+            m_buffer_parameters->get_plane_offset(plane_idx);
         const Index pixel_rows_in_macropixel_in_plane =
-                m_buffer_parameters.get_entry_rows_count_in_plane(plane_idx);
+            m_buffer_parameters->get_entry_rows_count_in_plane(plane_idx);
         const Bit_position macropixel_row_in_plane_size_in_bits =
-                m_buffer_parameters.get_macropixel_row_in_plane_size(plane_idx);
+            m_buffer_parameters->get_macropixel_row_in_plane_size(plane_idx);
         for(Index buffer_macropixel_row = 0;
             buffer_macropixel_row < buffer_size_in_macropixels.y();
             buffer_macropixel_row++)
@@ -282,7 +283,8 @@ void Yuv_file::insert_buffer(
                 row_in_macropixel++)
             {
                 const Bit_position bits_per_entry_row_in_plane =
-                        m_buffer_parameters.get_bits_per_macropixel_in_row_in_plane(
+                    m_buffer_parameters
+                        ->get_bits_per_macropixel_in_row_in_plane(
                             plane_idx, row_in_macropixel);
                 const Bit_position x_position_offset =
                         cast_to_macropixels(
@@ -337,9 +339,8 @@ void Yuv_file::init_file_parameters()
 //------------------------------------------------------------------------------
 void Yuv_file::recalculate_parameters()
 {
-    if(!m_parameters_valid)
-        m_buffer_parameters.recalculate(m_pixel_format, m_resolution);
-    m_parameters_valid = true;
+    m_buffer_parameters =
+        Precalculated_buffer_parameters::create(m_pixel_format, m_resolution);
 }
 
 } /* namespace YUV_tool */

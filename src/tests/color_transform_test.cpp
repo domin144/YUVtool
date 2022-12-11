@@ -9,7 +9,8 @@ const Pixel_format rgb_planar{
 
 TEST(color_transform_test, test_0)
 {
-    const Precalculated_pixel_format rgb_planar_precalculated{rgb_planar};
+    const Precalculated_pixel_format rgb_planar_precalculated {
+        *Precalculated_pixel_format::create(rgb_planar)};
     EXPECT_TRUE(rgb_planar_precalculated.is_expanded());
 
     {

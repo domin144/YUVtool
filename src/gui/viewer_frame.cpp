@@ -333,34 +333,29 @@ void Viewer_frame::on_action_help_about()
 //------------------------------------------------------------------------------
 void Viewer_frame::draw_frame()
 {
-    if(
-            m_yuv_file.is_open()
-            && m_yuv_file.get_pixel_format().macropixel_coding.size.x() > 0)
+    try
     {
-        try
-        {
-            const Gdk::Rectangle visible_area =
-                    m_scroll_adapter.get_visible_area();
-            const Coordinates<Unit::pixel, Reference_point::scaled_picture>
-                    visible_area_start(
-                        visible_area.get_x(),
-                        visible_area.get_y());
-            const Vector<Unit::pixel> visible_area_size(
-                        visible_area.get_width(),
-                        visible_area.get_height());
-            m_drawer_gl.draw(
-                        0,
-                        make_rectangle(visible_area_start, visible_area_size),
-                        1.0);
-        }
-        catch(...)
-        {
-            std::cerr << "failed to draw picture";
-            my_assert(
-                        false,
-                        "TODO: The picture might have changed or be deleted. "
-                        "Try to reload a file and, if fail, close it");
-        }
+        const Gdk::Rectangle visible_area =
+                m_scroll_adapter.get_visible_area();
+        const Coordinates<Unit::pixel, Reference_point::scaled_picture>
+                visible_area_start(
+                    visible_area.get_x(),
+                    visible_area.get_y());
+        const Vector<Unit::pixel> visible_area_size(
+                    visible_area.get_width(),
+                    visible_area.get_height());
+        m_drawer_gl.draw(
+                    0,
+                    make_rectangle(visible_area_start, visible_area_size),
+                    1.0);
+    }
+    catch(...)
+    {
+        std::cerr << "failed to draw picture";
+        my_assert(
+                    false,
+                    "TODO: The picture might have changed or be deleted. "
+                    "Try to reload a file and, if fail, close it");
     }
 }
 //------------------------------------------------------------------------------
@@ -374,7 +369,9 @@ bool Viewer_frame::on_action_draw_event(const Glib::RefPtr<Gdk::GLContext>&)
 void Viewer_frame::on_action_gl_context_init()
 {
     m_scroll_adapter.get_drawing_area().make_current();
-    m_drawer_gl.initialize(32);
+    /* At least for now, the size of the buffer must be sufficient to hold all
+     * the visible tiles. */
+    m_drawer_gl.initialize(256);
 }
 /*----------------------------------------------------------------------------*/
 void Viewer_frame::on_action_gl_context_deinit()

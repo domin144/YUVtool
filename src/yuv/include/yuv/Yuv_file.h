@@ -43,7 +43,6 @@ public:
             const std::filesystem::path &path,
             const std::ios_base::openmode mode = std::ios_base::in);
     void close();
-    void drawFrameGL() const;
     void set_pixel_format(const Pixel_format &pixel_format);
     const Pixel_format &get_pixel_format() const;
     void set_resolution(const Vector<Unit::pixel> &resolution);
@@ -69,9 +68,9 @@ private:
     std::fstream m_file;
     size_t m_file_size;
     Pixel_format m_pixel_format;
-    Precalculated_buffer_parameters m_buffer_parameters;
-    bool m_parameters_valid;
     Vector<Unit::pixel> m_resolution;
+    std::optional<Precalculated_buffer_parameters> m_buffer_parameters;
+    bool m_parameters_valid;
 };
 /*--------------------------------------------------------------------*/
 } /* namespace YUV_tool */

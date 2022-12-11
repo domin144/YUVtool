@@ -25,33 +25,31 @@
 #include <numeric>
 
 namespace YUV_tool {
-
+/*----------------------------------------------------------------------------*/
 Pixel_format get_expanded_pixel_format(
         const Color_space &color_space,
         const std::vector<Entry> &entries)
 {
     const Index components_count = color_space.components.size();
     my_assert(
-                entries.size() >= components_count,
-                "insufficient number of entries to create expanded pixel "
-                "format");
+        size(entries) == components_count,
+        "number of entries does not match the namber of planes for expanded "
+        "pixel format");
     Pixel_format result;
     result.color_space = color_space;
     result.macropixel_coding.size = {1, 1};
     result.macropixel_coding.pixels.resize(1);
-    Coded_pixel &target_pixel =
-            result.macropixel_coding.pixels.front();
+    Coded_pixel& target_pixel = result.macropixel_coding.pixels.front();
     target_pixel.components.resize(components_count);
     result.planes.resize(components_count);
-    for(Index component_index = 0; component_index < components_count;
-            component_index++)
+    for (const Index component_index : make_value_range(components_count))
     {
         target_pixel.components[component_index] = {component_index, 0, 0};
         result.planes[component_index] = {{{{entries[component_index]}}}};
     }
     return result;
 }
-//------------------------------------------------------------------------------
+/*----------------------------------------------------------------------------*/
 Pixel_format get_expanded_pixel_format(const Pixel_format &input)
 {
     const Index components_count = input.color_space.components.size();
@@ -85,41 +83,53 @@ Pixel_format get_expanded_pixel_format(const Pixel_format &input)
 
     return get_expanded_pixel_format(input.color_space, entries);
 }
-//------------------------------------------------------------------------------
-Precalculated_pixel_format::Precalculated_pixel_format()
+/*----------------------------------------------------------------------------*/
+std::optional<Precalculated_pixel_format> Precalculated_pixel_format::create(
+    const Pixel_format& pixel_format)
 {
-    clear();
-}
-//------------------------------------------------------------------------------
-Precalculated_pixel_format::Precalculated_pixel_format(
-        const Pixel_format &pixel_format)
-{
-    clear();
-    recalculate(pixel_format);
-}
-//------------------------------------------------------------------------------
-void Precalculated_pixel_format::clear()
-{
-    m_bits_per_macropixel = 0;
-    m_planes.clear();
-    m_is_expanded = false;
-}
-//------------------------------------------------------------------------------
-void Precalculated_pixel_format::recalculate(const Pixel_format &pixel_format)
-{
+    Precalculated_pixel_format result;
+
+    result.m_pixel_format = pixel_format;
+
     const Index planes_count = pixel_format.planes.size();
-
-    m_pixel_format = pixel_format;
-
-    m_planes.resize(planes_count);
-    for(Index plane_index = 0; plane_index < planes_count; plane_index++)
+    if (!is_in_range(planes_count, valid_planes_count_range))
     {
-        Plane_parameters &plane_parameters = m_planes[plane_index];
+        return {};
+    }
+
+    const Index components_count = pixel_format.color_space.components.size();
+    if (!is_in_range(components_count, valid_components_count_range))
+    {
+        return {};
+    }
+
+    const auto macropixel_size = result.get_macropixel_size();
+    if (!is_in_range(macropixel_size.x(), valid_macropixel_size_range)
+        || !is_in_range(macropixel_size.y(), valid_macropixel_size_range))
+    {
+        return {};
+    }
+
+    const Index pixels_in_macropixel_count =
+        pixel_format.macropixel_coding.pixels.size();
+    if (macropixel_size.x() * macropixel_size.y() != pixels_in_macropixel_count)
+    {
+        return {};
+    }
+
+    result.m_planes.resize(planes_count);
+    for(const Index plane_index : make_value_range(planes_count))
+    {
+        Plane_parameters &plane_parameters = result.m_planes[plane_index];
         const Plane &plane = pixel_format.planes[plane_index];
 
         const Index rows_count = pixel_format.planes[plane_index].rows.size();
+        if (!is_in_range(rows_count, valid_rows_in_plane_count_range))
+        {
+            return {};
+        }
         plane_parameters.m_rows.resize(rows_count);
-        for(Index row_index = 0; row_index < rows_count; row_index++)
+        for(const Index row_index : make_value_range(rows_count))
         {
             Entry_row_paramters &row_parameters =
                     plane_parameters.m_rows[row_index];
@@ -128,13 +138,18 @@ void Precalculated_pixel_format::recalculate(const Pixel_format &pixel_format)
             const Index entry_count = row.entries.size();
             row_parameters.m_entries.resize(entry_count);
             Bit_position offset = 0;
-            for(Index entry_index = 0; entry_index < entry_count; entry_index++)
+            for (const Index entry_index : make_value_range(entry_count))
             {
                 Entry_parameters &entry = row_parameters.m_entries[entry_index];
                 entry.m_offset = offset;
                 entry.m_sampling_point = {-1, -1};
                 entry.m_component_index = -1;
+                const Bit_position bit_width = row.entries[entry_index].width;
                 offset += row.entries[entry_index].width;
+                if (!is_in_range(bit_width, valid_bit_width_range))
+                {
+                    return {};
+                }
             }
             row_parameters.m_bits_per_macropixel = offset;
         }
@@ -148,120 +163,136 @@ void Precalculated_pixel_format::recalculate(const Pixel_format &pixel_format)
                         return sum + row.m_bits_per_macropixel;
                     });
     }
-    m_bits_per_macropixel =
+    result.m_bits_per_macropixel =
             std::accumulate(
-                m_planes.begin(),
-                m_planes.end(),
+                result.m_planes.begin(),
+                result.m_planes.end(),
                 Bit_position(0),
                 [](const Bit_position sum, const Plane_parameters &plane)
                 {
                     return sum + plane.m_bits_per_macropixel;
                 });
-    for(Index iy = 0; iy < get_macropixel_size().y(); iy++)
+
+    const auto macropixel_rectangle =
+        make_rectangle<Unit::pixel, Reference_point::macropixel>(
+            {0, 0}, macropixel_size);
+    for (const auto i : macropixel_rectangle)
     {
-        for(Index ix = 0; ix < get_macropixel_size().x(); ix++)
+        const Index pixel_index =
+            i.y() * result.get_macropixel_size().y() + i.x();
+        const Coded_pixel& coded_pixel =
+            pixel_format.macropixel_coding.pixels[pixel_index];
+        if (size(coded_pixel.components) != components_count)
         {
-            const Coordinates<Unit::pixel, Reference_point::macropixel>
-                    coordinates(ix, iy);
-            const Index pixel_index = iy * get_macropixel_size().y() + ix;
-            for(
-                    Index component_index = 0;
-                    component_index < get_components_count();
-                    component_index++)
+            return {};
+        }
+
+        for (const Index component_index : make_value_range(components_count))
+        {
+            const Component_coding& component_coding =
+                coded_pixel.components[component_index];
+
+            if (!is_in_range(
+                    component_coding.plane_index,
+                    make_value_range(planes_count)))
             {
-                const Component_coding &component_coding =
-                        pixel_format.macropixel_coding.pixels[
-                        pixel_index].components[
-                        component_index];
-                Entry_parameters &entry_parameters =
-                        m_planes[
-                        component_coding.plane_index].m_rows[
-                        component_coding.row_index].m_entries[
-                        component_coding.entry_index];
-                if(
-                        entry_parameters.m_sampling_point
-                        == Coordinates<Unit::pixel,
-                            Reference_point::macropixel>(-1, -1))
-                {
-                    entry_parameters.m_sampling_point = coordinates;
-                    entry_parameters.m_component_index = component_index;
-                }
+                return {};
+            }
+            const Plane& plane =
+                pixel_format.planes[component_coding.plane_index];
+            Plane_parameters& plane_parameters =
+                result.m_planes[component_coding.plane_index];
+
+            if (!is_in_range(
+                    component_coding.row_index,
+                    make_value_range(size(plane.rows))))
+            {
+                return {};
+            }
+            const Entry_row& row = plane.rows[component_coding.row_index];
+            Entry_row_paramters& row_parameters =
+                plane_parameters.m_rows[component_coding.row_index];
+
+            if (!is_in_range(
+                    component_coding.entry_index,
+                    make_value_range(size(row.entries))))
+            {
+                return {};
+            }
+            Entry_parameters& entry_parameters =
+                    row_parameters.m_entries[component_coding.entry_index];
+
+            if (entry_parameters.m_sampling_point
+                == Coordinates<Unit::pixel, Reference_point::macropixel>(
+                    -1, -1))
+            {
+                entry_parameters.m_sampling_point = i;
+                entry_parameters.m_component_index = component_index;
             }
         }
     }
 
     // m_is_expanded
-    if (planes_count == get_components_count())
+    if (macropixel_size == Vector<Unit::pixel>(1, 1)
+        && planes_count == result.get_components_count())
     {
-        for (Index plane_index = 0; plane_index < planes_count; plane_index++)
+        for (const Index plane_index : make_value_range(components_count))
         {
-            for (const Coded_pixel &pixel : get_pixel_format(
-                    ).macropixel_coding.pixels)
+            if (size(pixel_format.planes[plane_index].rows) != 1
+                || size(pixel_format.planes[plane_index].rows.front().entries)
+                    != 1)
             {
-                const Component_coding &component =
-                        pixel.components[plane_index];
-                if(
-                        component.plane_index != plane_index
-                        || component.row_index != 0
-                        || component.entry_index != 0)
-                {
-                    goto is_not_expanded;
-                }
+                goto is_not_expanded;
+            }
+            const Coded_pixel& pixel =
+                pixel_format.macropixel_coding.pixels.front();
+            const Component_coding& component = pixel.components[plane_index];
+            if (component.plane_index != plane_index || component.row_index != 0
+                || component.entry_index != 0)
+            {
+                goto is_not_expanded;
             }
         }
-        m_is_expanded = true;
+        result.m_is_expanded = true;
     }
     else
     {
     is_not_expanded:
-        m_is_expanded = false;
+        result.m_is_expanded = false;
     }
+    return result;
 }
-//------------------------------------------------------------------------------
-Precalculated_buffer_parameters::Precalculated_buffer_parameters()
+/*----------------------------------------------------------------------------*/
+std::optional<Precalculated_buffer_parameters> Precalculated_buffer_parameters::
+    create(const Pixel_format& format, const Vector<Unit::pixel>& resolution)
 {
-    clear();
-}
-//------------------------------------------------------------------------------
-Precalculated_buffer_parameters::Precalculated_buffer_parameters(
-        const Pixel_format &format,
-        const Vector<Unit::pixel> &resolution)
-{
-    clear();
-    recalculate(format, resolution);
-}
-//------------------------------------------------------------------------------
-void Precalculated_buffer_parameters::clear()
-{
-    Precalculated_pixel_format::clear();
-    m_resolution = {0, 0};
-    m_planes.clear();
-    m_buffer_size = Bit_position(0);
-}
-//------------------------------------------------------------------------------
-void Precalculated_buffer_parameters::recalculate(
-        const Pixel_format &format,
-        const Vector<Unit::pixel> &resolution)
-{
-    Precalculated_pixel_format::recalculate(format);
-    m_resolution = resolution;
-    m_size_in_macropixels.set(
-            resolution.x() / get_macropixel_size().x(),
-            resolution.y() / get_macropixel_size().y());
-    m_planes.resize(get_planes_count());
-    Bit_position plane_offset = 0;
-    for(Index plane_index = 0; plane_index < get_planes_count(); plane_index++)
+    auto maybePixelFormat = Precalculated_pixel_format::create(format);
+    if (!maybePixelFormat)
     {
-        Plane_parameters &plane = m_planes[plane_index];
+        return {};
+    }
+
+    Precalculated_buffer_parameters result;
+    static_cast<Precalculated_pixel_format&>(result) = *maybePixelFormat;
+    result.m_resolution = resolution;
+    result.m_size_in_macropixels.set(
+            resolution.x() / result.get_macropixel_size().x(),
+            resolution.y() / result.get_macropixel_size().y());
+    result.m_planes.resize(result.get_planes_count());
+    Bit_position plane_offset = 0;
+    for (const Index plane_index : make_value_range(result.get_planes_count()))
+    {
+        Plane_parameters &plane = result.m_planes[plane_index];
         plane.m_offset = plane_offset;
-        const Index rows_count = get_entry_rows_count_in_plane(plane_index);
+        const Index rows_count =
+            result.get_entry_rows_count_in_plane(plane_index);
         plane.m_rows.resize(rows_count);
         Bit_position bits_per_macropixel_row_in_plane = 0;
-        for(Index row_index = 0; row_index < rows_count; row_index++)
+        for (const Index row_index : make_value_range(rows_count))
         {
             plane.m_rows[row_index].m_size =
-                    m_size_in_macropixels.x()
-                    * get_bits_per_macropixel_in_row_in_plane(
+                    result.m_size_in_macropixels.x()
+                    * result.get_bits_per_macropixel_in_row_in_plane(
                         plane_index,
                         row_index);
             plane.m_rows[row_index].m_offset =
@@ -270,10 +301,11 @@ void Precalculated_buffer_parameters::recalculate(
         }
         plane.m_size_per_row_of_macropixels = bits_per_macropixel_row_in_plane;
         plane.m_size =
-                bits_per_macropixel_row_in_plane * m_size_in_macropixels.y();
+            bits_per_macropixel_row_in_plane * result.m_size_in_macropixels.y();
         plane_offset += plane.m_size;
     }
-    m_buffer_size = plane_offset;
+    result.m_buffer_size = plane_offset;
+    return result;
 }
-
+/*----------------------------------------------------------------------------*/
 } /* namespace YUV_tool */

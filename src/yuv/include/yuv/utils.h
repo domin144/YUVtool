@@ -20,16 +20,23 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <iostream>
+#include <vector>
 
 namespace YUV_tool {
 /*----------------------------------------------------------------------------*/
 using Byte = std::uint8_t;
-using Index = std::int32_t;
+using Index = std::int64_t;
 const Index bits_in_byte = 8;
-using Length = std::int32_t;
+using Length = std::int64_t;
+/*----------------------------------------------------------------------------*/
+template<typename T>
+Index size(const std::vector<T> &v)
+{
+    return static_cast<Index>(v.size());
+}
 /*----------------------------------------------------------------------------*/
 enum Rgba_component
 {
@@ -150,9 +157,7 @@ public:
 
     private:
         /* constructor is to be accesible only to Value_range class */
-        Iterator(const Value value) :
-            m_value(value)
-        { }
+        constexpr Iterator(const Value value) : m_value(value) { }
 
     public:
         Value operator*() const
@@ -163,6 +168,7 @@ public:
         Iterator &operator++()
         {
             m_value = static_cast<Value>(static_cast<int>(m_value) + 1);
+            return *this;
         }
 
         Iterator operator++(int)
@@ -183,7 +189,7 @@ private:
     Iterator m_end;
 
 public:
-    Value_range(const Value begin, const Value end) :
+    constexpr Value_range(const Value begin, const Value end) :
         m_begin(begin),
         m_end(end)
     { }
@@ -199,10 +205,30 @@ public:
     }
 };
 /*----------------------------------------------------------------------------*/
-template<typename Value>
-Value_range<Value> make_value_range(const Value begin, const Value end)
+template <typename Value>
+constexpr Value_range<Value> make_value_range(
+    const Value begin, const Value end)
 {
     return Value_range<Value>(begin, end);
+}
+/*----------------------------------------------------------------------------*/
+template <typename Value>
+constexpr Value_range<Value> make_value_range(const Value end)
+{
+    return Value_range<Value>(Value {}, end);
+}
+/*----------------------------------------------------------------------------*/
+template <typename Value>
+constexpr Value_range<Value> make_inclusive_value_range(
+    const Value begin, const Value end)
+{
+    return Value_range<Value>(begin, end + 1);
+}
+/*----------------------------------------------------------------------------*/
+template<typename Value>
+bool is_in_range(const Value &x, const Value_range<Value> &range)
+{
+    return *range.begin() <= x && x < *range.end();
 }
 /*----------------------------------------------------------------------------*/
 /* This is a helper class for making range based loops over a range described by
