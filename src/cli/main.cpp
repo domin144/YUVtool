@@ -18,6 +18,8 @@
  *
  */
 
+#include <boost/gil.hpp>
+#include <boost/gil/extension/io/png.hpp>
 #include <yuv/Errors.h>
 #include <yuv/Yuv_file.h>
 
@@ -45,8 +47,29 @@ stream_info RES_X RES_Y INPUT_YUV_FILE
 
 convert RES_X RES_Y INPUT_420YUV_FILE OUTPUT_444RGB_FILE
     convert input 420 planar yuv file into plain non-planar 32bpp RGB file
+
+png RES_X RES_Y INPUT_420YUV_FILE OUTPUT_PNG_FILE
+    convert input 420 planar yuv file into PNG file
 )";
 
+void save_as_png(
+    const YUV_tool::Picture_buffer& buffer, const std::string& filename)
+{
+    namespace gil = boost::gil;
+    namespace yuv = YUV_tool;
+
+    const auto converted_buffer = yuv::convert(buffer, yuv::rgb_24bpp);
+
+    const gil::rgb8c_view_t view = gil::interleaved_view(
+        buffer.get_resolution().x(),
+        buffer.get_resolution().y(),
+        reinterpret_cast<const gil::rgb8_pixel_t*>(buffer.get_data().data()),
+        buffer.get_parameters()
+            .get_macropixel_row_in_plane_size(0)
+            .get_bytes());
+
+    gil::write_view(filename, view, gil::png_tag());
+}
 
 int main(int argc, char *argv[]) try
 {
@@ -104,6 +127,29 @@ int main(int argc, char *argv[]) try
                     0,
                     zero_coordinate,
                     zero_coordinate + resolution);
+    }
+    else if(command == "png")
+    {
+        if(argc != 6)
+            throw GeneralError(help_string);
+
+        Yuv_file input_file(argv[4]);
+
+        Vector<Unit::pixel> resolution;
+        resolution.set_x(std::atoi(argv[2]));
+        resolution.set_y(std::atoi(argv[3]));
+
+        input_file.set_resolution(resolution);
+        input_file.set_pixel_format(yuv_420p_8bit);
+
+        Coordinates<Unit::pixel, Reference_point::picture>
+                zero_coordinate(0, 0);
+        Picture_buffer input_buffer =
+                input_file.extract_buffer(
+                    0,
+                    zero_coordinate,
+                    zero_coordinate + resolution);
+        save_as_png(input_buffer, argv[5]);
     }
     else
     {

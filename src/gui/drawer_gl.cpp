@@ -355,11 +355,6 @@ void Drawer_gl::Implementation::draw(
             visible_area,
         const float scale)
 {
-    {
-        static int i = 0;
-        std::cerr << __func__ << ' ' << i++ << std::endl;
-    }
-
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 

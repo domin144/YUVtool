@@ -422,7 +422,7 @@ const Pixel_format rgb_24bpp
         { 1, 1 }
     }
 };
-
+/*----------------------------------------------------------------------------*/
 constexpr auto valid_planes_count_range =
     make_inclusive_value_range<Index>(1, 16);
 constexpr auto valid_rows_in_plane_count_range =
@@ -435,7 +435,7 @@ constexpr auto valid_components_count_range =
     make_inclusive_value_range<Index>(1, 4);
 constexpr auto valid_macropixel_size_range =
     make_inclusive_value_range<Index>(1, 4);
-
+/*----------------------------------------------------------------------------*/
 class Precalculated_pixel_format
 {
 private:
@@ -575,7 +575,10 @@ private:
                 + pixel_in_macropixel.x();
     }
 };
-
+/*----------------------------------------------------------------------------*/
+constexpr auto valid_frame_dimension_range =
+    make_inclusive_value_range<Index>(1, 64*1024);
+/*----------------------------------------------------------------------------*/
 class Precalculated_buffer_parameters : public Precalculated_pixel_format
 {
 public:

@@ -243,13 +243,11 @@ void Viewer_frame::on_action_file_open()
     {
         m_yuv_file.open(file_name);
     }
-    catch(std::runtime_error &)
+    catch(std::runtime_error &e)
     {
-        std::cerr << "failed to open file: " << file_name << '\n';
+        std::cerr << "failed to open file: " << file_name << ", " << e.what()
+                  << '\n';
     }
-
-    /* TODO: remove hardcoded value */
-    m_yuv_file.set_resolution({176, 144});
 
     {
         Resolution_and_format_dialog dialog(*this);
@@ -344,6 +342,16 @@ void Viewer_frame::draw_frame()
         const Vector<Unit::pixel> visible_area_size(
                     visible_area.get_width(),
                     visible_area.get_height());
+
+        {
+            static int i = 0;
+            std::cerr << __func__ << ' ' << i++ << std::endl;
+            std::cerr << '(' << visible_area.get_x() << ", "
+                      << visible_area.get_y() << ") + ("
+                      << visible_area.get_width() << ", "
+                      << visible_area.get_height() << ')' << std::endl;
+        }
+
         m_drawer_gl.draw(
                     0,
                     make_rectangle(visible_area_start, visible_area_size),

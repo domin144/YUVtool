@@ -48,6 +48,8 @@ public:
     Vector<Unit::pixel> get_resolution() const;
     void set_resolution(const Vector<Unit::pixel> &resolution);
 
+    void update_ok_button_state();
+
     sigc::signal<void()> &signal_pixel_format_changed();
     sigc::signal<void()> &signal_resolution_changed();
 };

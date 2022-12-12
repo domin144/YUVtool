@@ -272,6 +272,12 @@ std::optional<Precalculated_buffer_parameters> Precalculated_buffer_parameters::
         return {};
     }
 
+    if (!is_in_range(resolution.x(), valid_frame_dimension_range)
+        || !is_in_range(resolution.y(), valid_frame_dimension_range))
+    {
+        return {};
+    }
+
     Precalculated_buffer_parameters result;
     static_cast<Precalculated_pixel_format&>(result) = *maybePixelFormat;
     result.m_resolution = resolution;

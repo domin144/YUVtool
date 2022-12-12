@@ -34,10 +34,14 @@ Resolution_and_format_dialog::Resolution_and_format_dialog(
     m_box.pack_start(m_format_widget);
     m_box.pack_start(m_resolution_widget);
 
-    m_format_widget.signal_pixel_format_changed().connect(
-        [this]() { m_signal_pixel_format_changed(); });
-    m_resolution_widget.signal_resolution_changed().connect(
-        [this]() { m_signal_resolution_changed(); });
+    m_format_widget.signal_pixel_format_changed().connect([this]() {
+        update_ok_button_state();
+        m_signal_pixel_format_changed();
+    });
+    m_resolution_widget.signal_resolution_changed().connect([this]() {
+        update_ok_button_state();
+        m_signal_resolution_changed();
+    });
 
     show_all();
 }
@@ -51,6 +55,7 @@ void Resolution_and_format_dialog::set_pixel_format(
     const Pixel_format& pixel_format)
 {
     m_format_widget.set_pixel_format(pixel_format);
+    update_ok_button_state();
 }
 /*----------------------------------------------------------------------------*/
 Vector<Unit::pixel> Resolution_and_format_dialog::get_resolution() const
@@ -62,6 +67,16 @@ void Resolution_and_format_dialog::set_resolution(
     const Vector<Unit::pixel>& resolution)
 {
     m_resolution_widget.set_resolution(resolution);
+    update_ok_button_state();
+}
+/*----------------------------------------------------------------------------*/
+void Resolution_and_format_dialog::update_ok_button_state()
+{
+    const auto params = Precalculated_buffer_parameters::create(
+        m_format_widget.get_pixel_format(),
+        m_resolution_widget.get_resolution());
+
+    set_response_sensitive(Gtk::RESPONSE_OK, params.has_value());
 }
 /*----------------------------------------------------------------------------*/
 } /* namespace YUV_tool */
