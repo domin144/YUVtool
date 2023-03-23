@@ -48,7 +48,7 @@ stream_info RES_X RES_Y INPUT_YUV_FILE
 convert RES_X RES_Y INPUT_420YUV_FILE OUTPUT_444RGB_FILE
     convert input 420 planar yuv file into plain non-planar 32bpp RGB file
 
-png RES_X RES_Y INPUT_420YUV_FILE OUTPUT_PNG_FILE
+png RES_X RES_Y INPUT_420RGB_FILE OUTPUT_PNG_FILE
     convert input 420 planar yuv file into PNG file
 )";
 
@@ -63,8 +63,8 @@ void save_as_png(
     const gil::rgb8c_view_t view = gil::interleaved_view(
         buffer.get_resolution().x(),
         buffer.get_resolution().y(),
-        reinterpret_cast<const gil::rgb8_pixel_t*>(buffer.get_data().data()),
-        buffer.get_parameters()
+        gil::rgb8c_view_t::x_iterator(converted_buffer.get_data().data()),
+        converted_buffer.get_parameters()
             .get_macropixel_row_in_plane_size(0)
             .get_bytes());
 
