@@ -1,0 +1,12 @@
+install_headers(
+    'yuv/Picture_buffer.h',
+    'yuv/trees_and_heaps.h',
+    'yuv/Errors.h',
+    'yuv/Coordinates.h',
+    'yuv/Bit_position.h',
+    'yuv/Yuv_file.h',
+    'yuv/saturable_fixed.h',
+    'yuv/Pixel_format.h',
+    'yuv/xml_metadata.h',
+    'yuv/utils.h',
+    'yuv/Cache.h')
