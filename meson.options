@@ -3,3 +3,4 @@ option(
         type: 'boolean',
         value: false,
         description: 'build documentation')
+option('tests', type: 'boolean', value: false, description: 'build tests')
