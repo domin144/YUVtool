@@ -24,10 +24,11 @@
 #include <drawer_gl.h>
 #include <yuv/Yuv_file.h>
 
-#include <gtkmm/window.h>
-#include <gtkmm/uimanager.h>
+#include <giomm/simpleactiongroup.h>
 #include <gtkmm/box.h>
+#include <gtkmm/builder.h>
 #include <gtkmm/button.h>
+#include <gtkmm/window.h>
 
 namespace YUV_tool {
 
@@ -50,8 +51,9 @@ private:
     void draw_triangle();
     void draw_frame();
 
-    Glib::RefPtr<Gtk::ActionGroup> m_action_group;
-    Glib::RefPtr<Gtk::UIManager> m_ui_manager;
+    Glib::RefPtr<Gio::SimpleActionGroup> m_file_action_group;
+    Glib::RefPtr<Gio::SimpleActionGroup> m_help_action_group;
+    Glib::RefPtr<Gtk::Builder> m_builder;
     Gtk::Box m_box;
     Yuv_file m_yuv_file;
     Drawer_gl m_drawer_gl;

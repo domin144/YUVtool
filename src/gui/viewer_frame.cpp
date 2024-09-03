@@ -18,16 +18,21 @@
  * along with YUVtool.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include <viewer_frame.h>
+
 #include <resolution_and_format_dialog.h>
+#include <viewer_frame.h>
 #include <yuv/Errors.h>
 
-#include <gtkmm/stock.h>
-#include <gtkmm/messagedialog.h>
-#include <gtkmm/socket.h>
+#include <giomm/menu.h>
+#include <giomm/simpleactiongroup.h>
+#include <gtkmm/builder.h>
 #include <gtkmm/filechooserdialog.h>
+#include <gtkmm/menubar.h>
+#include <gtkmm/messagedialog.h>
+#include <gtkmm/popovermenu.h>
+#include <gtkmm/socket.h>
+#include <gtkmm/stock.h>
 #include <iostream>
-#include <cstdlib>
 
 namespace YUV_tool {
 
@@ -37,72 +42,92 @@ Viewer_frame::Viewer_frame() :
     m_drawer_gl.attach_yuv_file(&m_yuv_file);
 
     /* File menu action group */
-    m_action_group = Gtk::ActionGroup::create();
-    m_action_group->add(
-        Gtk::Action::create( "menu_file", "_File" ) );
-    m_action_group->add(
-        Gtk::Action::create( "open_file", Gtk::Stock::OPEN ),
-        sigc::mem_fun( *this, &Viewer_frame::on_action_file_open ) );
-    m_action_group->add(
-        Gtk::Action::create( "close_file", Gtk::Stock::CLOSE ),
-        sigc::mem_fun( *this, &Viewer_frame::on_action_file_close ) );
-    m_action_group->add(
-        Gtk::Action::create( "quit", Gtk::Stock::QUIT ),
-        sigc::mem_fun( *this, &Viewer_frame::on_action_file_quit ) );
-    m_action_group->add(
-        Gtk::Action::create( "show_size", Gtk::Stock::ABOUT,
-            "Show size of the drowing area" ),
-        sigc::mem_fun( *this, &Viewer_frame::on_action_show_size ) );
+    m_file_action_group = Gio::SimpleActionGroup::create();
+    m_file_action_group->add_action(
+        "open", sigc::mem_fun(*this, &Viewer_frame::on_action_file_open));
+    m_file_action_group->add_action(
+        "close", sigc::mem_fun(*this, &Viewer_frame::on_action_file_close));
+    m_file_action_group->add_action(
+        "show_size", sigc::mem_fun(*this, &Viewer_frame::on_action_show_size));
+    m_file_action_group->add_action(
+        "quit", sigc::mem_fun(*this, &Viewer_frame::on_action_file_quit));
+    insert_action_group("file", m_file_action_group);
 
     /* Help menu action group */
-    m_action_group->add(
-        Gtk::Action::create( "menu_help", "_Help" ) );
-    m_action_group->add(
-        Gtk::Action::create( "help_info", Gtk::Stock::HELP ),
-        sigc::mem_fun( *this, &Viewer_frame::on_action_help_info ) );
-    m_action_group->add(
-        Gtk::Action::create( "about_info", Gtk::Stock::ABOUT ),
-        sigc::mem_fun( *this, &Viewer_frame::on_action_help_about ) );
+    m_help_action_group = Gio::SimpleActionGroup::create();
+    m_help_action_group->add_action(
+        "info", sigc::mem_fun(*this, &Viewer_frame::on_action_help_info));
+    m_help_action_group->add_action(
+        "about", sigc::mem_fun(*this, &Viewer_frame::on_action_help_about));
+    insert_action_group("help", m_help_action_group);
 
-
-    m_ui_manager = Gtk::UIManager::create();
-    m_ui_manager->insert_action_group( m_action_group );
-    add_accel_group( m_ui_manager->get_accel_group() );
+    m_builder = Gtk::Builder::create();
     Glib::ustring ui_info =
         R"(
-        <ui>
-            <menubar name='menu_bar'>
-                <menu action='menu_file'>
-                    <menuitem action='open_file'/>
-                    <menuitem action='close_file'/>
-                    <separator/>
-                    <menuitem action='show_size'/>
-                    <separator/>
-                    <menuitem action='quit'/>
-                </menu>
-                <menu action='menu_help'>
-                    <menuitem action='help_info'/>
-                    <separator/>
-                    <menuitem action='about_info'/>
-                </menu>
-            </menubar>
-            <toolbar name='tool_bar'>
-                <toolitem action='open_file'/>
-                <toolitem action='close_file'/>
-                <toolitem action='show_size'/>
-                <toolitem action='quit'/>
-            </toolbar>
-        </ui>
+        <interface>
+            <menu id='menubar'>
+                <submenu>
+                    <attribute name='label' translatable='yes'>_File</attribute>
+                    <section>
+                        <item>
+                            <attribute name='label' translatable='yes'>_Open</attribute>
+                            <attribute name='action'>file.open</attribute>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <attribute name='label' translatable='yes'>_Close</attribute>
+                            <attribute name='action'>file.close</attribute>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <attribute name='label' translatable='yes'>_Show size</attribute>
+                            <attribute name='action'>file.show_size</attribute>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <attribute name='label' translatable='yes'>_Quit</attribute>
+                            <attribute name='action'>file.quit</attribute>
+                        </item>
+                    </section>
+                </submenu>
+                <submenu>
+                    <attribute name='label' translatable='yes'>_Help</attribute>
+                    <section>
+                        <item>
+                            <attribute name='label' translatable='yes'>_Help</attribute>
+                            <attribute name='action'>help.info</attribute>
+                        </item>
+                    </section>
+                    <section>
+                        <item>
+                            <attribute name='label' translatable='yes'>_About</attribute>
+                            <attribute name='action'>help.about</attribute>
+                        </item>
+                    </section>
+                </submenu>
+            </menu>
+        </interface>
         )";
-    m_ui_manager->add_ui_from_string( ui_info );
 
-    set_default_size( 400, 250 );
+    // <toolbar name='tool_bar'>
+    //     <toolitem action='open_file'/>
+    //     <toolitem action='close_file'/>
+    //     <toolitem action='show_size'/>
+    //     <toolitem action='quit'/>
+    // </toolbar>
+    m_builder->add_from_string(ui_info);
 
-    Gtk::Widget *menu_bar = m_ui_manager->get_widget("/menu_bar");
-    m_box.pack_start( *menu_bar, Gtk::PACK_SHRINK );
+    set_default_size(400, 250);
 
-    Gtk::Widget *tool_bar = m_ui_manager->get_widget("/tool_bar");
-    m_box.pack_start( *tool_bar, Gtk::PACK_SHRINK );
+    Glib::RefPtr<Gio::Menu> menu =
+        Glib::RefPtr<Gio::Menu>::cast_dynamic(m_builder->get_object("menubar"));
+    m_box.pack_start(*Gtk::make_managed<Gtk::MenuBar>(menu), Gtk::PACK_SHRINK);
+
+    // Gtk::Widget *tool_bar = m_ui_manager->get_widget("/tool_bar");
+    // m_box.pack_start( *tool_bar, Gtk::PACK_SHRINK );
 
     m_scroll_adapter.get_drawing_area().signal_render().connect(
                 sigc::mem_fun(*this, &Viewer_frame::on_action_draw_event));
