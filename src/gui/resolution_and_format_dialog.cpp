@@ -32,14 +32,16 @@ Resolution_and_format_dialog::Resolution_and_format_dialog(
 
     get_content_area()->append(m_box);
 
-#ifdef GTK4_PORT_DONE
     m_box.append(m_format_widget);
+#ifdef GTK4_PORT_DONE
     m_box.append(m_resolution_widget);
+#endif /* GTK4_PORT_DONE */
 
     m_format_widget.signal_pixel_format_changed().connect([this]() {
         update_ok_button_state();
         m_signal_pixel_format_changed();
     });
+#ifdef GTK4_PORT_DONE
     m_resolution_widget.signal_resolution_changed().connect([this]() {
         update_ok_button_state();
         m_signal_resolution_changed();
@@ -49,20 +51,13 @@ Resolution_and_format_dialog::Resolution_and_format_dialog(
 /*----------------------------------------------------------------------------*/
 Pixel_format Resolution_and_format_dialog::get_pixel_format() const
 {
-    return
-#ifdef GTK4_PORT_DONE
-        m_format_widget.get_pixel_format();
-#else /* GTK4_PORT_DONE */
-        {};
-#endif /* GTK4_PORT_DONE */
+    return m_format_widget.get_pixel_format();
 }
 /*----------------------------------------------------------------------------*/
 void Resolution_and_format_dialog::set_pixel_format(
     const Pixel_format& pixel_format)
 {
-#ifdef GTK4_PORT_DONE
     m_format_widget.set_pixel_format(pixel_format);
-#endif /* GTK4_PORT_DONE */
     update_ok_button_state();
 }
 /*----------------------------------------------------------------------------*/

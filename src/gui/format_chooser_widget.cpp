@@ -17,18 +17,22 @@
  * along with YUVtool.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include "gtkmm/enums.h"
 #include <format_chooser_widget.h>
+#include <gtkmm-3.0/gtkmm/enums.h>
 
 namespace YUV_tool {
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Format_chooser_widget() :
-    m_box(Gtk::ORIENTATION_VERTICAL)
+    m_box(Gtk::Orientation::VERTICAL)
 {
-    add(m_box);
+    set_child(m_box);
 
-    m_box.pack_start(m_predefined_choice);
-    m_box.pack_start(m_notebook);
+    m_box.append(m_predefined_choice);
+    m_box.append(m_notebook);
+#ifdef GTK4_PORT_DONE
     m_notebook.append_page(m_color_space_frame, "Color space");
+#endif /* GTK4_PORT_DONE */
     m_notebook.append_page(m_plane_frame, "Planes");
     m_notebook.append_page(m_macropixel_frame, "Macropixel");
 
@@ -53,7 +57,9 @@ Format_chooser_widget::Format_chooser_widget() :
 
     auto update_handler = sigc::mem_fun(*this, &Format_chooser_widget::update);
     m_predefined_choice.signal_changed().connect(update_handler);
+#ifdef GTK4_PORT_DONE
     m_color_space_frame.signal_color_space_changed().connect(update_handler);
+#endif /* GTK4_PORT_DONE */
     m_plane_frame.m_planes_count_entry.signal_value_changed().connect(
         update_handler);
     m_macropixel_frame.m_rows_entry.signal_value_changed().connect(
@@ -77,7 +83,9 @@ const Pixel_format Format_chooser_widget::get_pixel_format() const
 
     Pixel_format result;
 
+#ifdef GTK4_PORT_DONE
     result.color_space = m_color_space_frame.get_color_space();
+#endif /* GTK4_PORT_DONE */
 
     const Index planes_count =
         m_plane_frame.m_planes_count_entry.get_value_as_int();
@@ -188,57 +196,56 @@ void Format_chooser_widget::set_pixel_format(const Pixel_format& pixel_format)
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Entry_configurator::Entry_configurator() :
-    Gtk::Box(Gtk::ORIENTATION_HORIZONTAL),
+    Gtk::Box(Gtk::Orientation::HORIZONTAL),
     m_entry_label("entry:"),
     m_bit_count_entry(Gtk::Adjustment::create(0, 0, 100, 1)),
     m_bits_label("bits")
 {
-    pack_start(m_entry_label);
-    pack_start(m_bit_count_entry);
-    pack_start(m_bits_label);
+    append(m_entry_label);
+    append(m_bit_count_entry);
+    append(m_bits_label);
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Row_in_plane_configurator::Row_in_plane_configurator() :
-    Gtk::Box(Gtk::ORIENTATION_VERTICAL),
-    m_entry_count_box(Gtk::ORIENTATION_HORIZONTAL),
+    Gtk::Box(Gtk::Orientation::VERTICAL),
+    m_entry_count_box(Gtk::Orientation::HORIZONTAL),
     m_entry_count_label("entries count:"),
     m_entry_count_entry(Gtk::Adjustment::create(0, 0, 100, 1))
 {
-    pack_start(m_entry_count_box);
-    m_entry_count_box.pack_start(m_entry_count_label);
-    m_entry_count_box.pack_start(m_entry_count_entry);
+    append(m_entry_count_box);
+    m_entry_count_box.append(m_entry_count_label);
+    m_entry_count_box.append(m_entry_count_entry);
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Plane_configurator::Plane_configurator() :
-    m_box(Gtk::ORIENTATION_VERTICAL),
+    m_box(Gtk::Orientation::VERTICAL),
     m_row_count_label("rows count:"),
     m_row_count_entry(Gtk::Adjustment::create(0, 0, 100, 1))
 {
-    add(m_box);
-    m_box.pack_start(m_row_count_box);
-    m_row_count_box.pack_start(m_row_count_label);
-    m_row_count_box.pack_start(m_row_count_entry);
+    set_child(m_box);
+    m_box.append(m_row_count_box);
+    m_row_count_box.append(m_row_count_label);
+    m_row_count_box.append(m_row_count_entry);
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Plane_frame::Plane_frame() :
-    m_box(Gtk::ORIENTATION_VERTICAL),
-    m_planes_count_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_box(Gtk::Orientation::VERTICAL),
+    m_planes_count_box(Gtk::Orientation::HORIZONTAL),
     m_planes_count_label("planes count: "),
     m_planes_count_entry(Gtk::Adjustment::create(0, 0, 100, 1)),
-    m_planes_box(Gtk::ORIENTATION_HORIZONTAL)
+    m_planes_box(Gtk::Orientation::HORIZONTAL)
 {
     set_label("Planes");
-    set_shadow_type(Gtk::SHADOW_ETCHED_OUT);
 
-    add(m_box);
-    m_box.pack_start(m_planes_count_box);
-    m_planes_count_box.pack_start(m_planes_count_label);
-    m_planes_count_box.pack_start(m_planes_count_entry);
-    m_box.pack_start(m_planes_box);
+    set_child(m_box);
+    m_box.append(m_planes_count_box);
+    m_planes_count_box.append(m_planes_count_label);
+    m_planes_count_box.append(m_planes_count_entry);
+    m_box.append(m_planes_box);
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Sample_configurator::Sample_configurator() :
-    Gtk::Box(Gtk::ORIENTATION_HORIZONTAL),
+    Gtk::Box(Gtk::Orientation::HORIZONTAL),
     m_sample_label("sample:"),
     m_plane_label("plane:"),
     m_plane_entry(Gtk::Adjustment::create(0, 0, 1000)),
@@ -247,39 +254,38 @@ Format_chooser_widget::Sample_configurator::Sample_configurator() :
     m_index_label("index"),
     m_index_entry(Gtk::Adjustment::create(0, 0, 1000))
 {
-    pack_start(m_sample_label);
-    pack_start(m_plane_label);
-    pack_start(m_plane_entry);
-    pack_start(m_row_label);
-    pack_start(m_row_entry);
-    pack_start(m_index_label);
-    pack_start(m_index_entry);
+    append(m_sample_label);
+    append(m_plane_label);
+    append(m_plane_entry);
+    append(m_row_label);
+    append(m_row_entry);
+    append(m_index_label);
+    append(m_index_entry);
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Pixel_configurator::Pixel_configurator() :
-    m_box(Gtk::ORIENTATION_VERTICAL)
+    m_box(Gtk::Orientation::VERTICAL)
 {
-    add(m_box);
+    set_child(m_box);
 }
 /*----------------------------------------------------------------------------*/
 Format_chooser_widget::Macropixel_frame::Macropixel_frame() :
-    m_box(Gtk::ORIENTATION_VERTICAL),
-    m_parameters_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_box(Gtk::Orientation::VERTICAL),
+    m_parameters_box(Gtk::Orientation::HORIZONTAL),
     m_rows_label("rows:"),
     m_rows_entry(Gtk::Adjustment::create(0, 0, 100)),
     m_columns_label("columns:"),
     m_columns_entry(Gtk::Adjustment::create(0, 0, 100))
 {
     set_label("Macropixel");
-    set_shadow_type(Gtk::SHADOW_ETCHED_OUT);
 
-    add(m_box);
-    m_box.pack_start(m_parameters_box);
-    m_parameters_box.pack_start(m_rows_label);
-    m_parameters_box.pack_start(m_rows_entry);
-    m_parameters_box.pack_start(m_columns_label);
-    m_parameters_box.pack_start(m_columns_entry);
-    m_box.pack_start(m_pixel_grid);
+    set_child(m_box);
+    m_box.append(m_parameters_box);
+    m_parameters_box.append(m_rows_label);
+    m_parameters_box.append(m_rows_entry);
+    m_parameters_box.append(m_columns_label);
+    m_parameters_box.append(m_columns_entry);
+    m_box.append(m_pixel_grid);
 }
 /*----------------------------------------------------------------------------*/
 void Format_chooser_widget::Macropixel_frame::reshape()
@@ -327,10 +333,14 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
         (*m_predefined_choice.get_active())[m_predefined_column_record.pointer];
     const bool use_predefined = predefined_format != nullptr;
     m_plane_frame.set_sensitive(!use_predefined);
+#ifdef GTK4_PORT_DONE
     m_color_space_frame.set_sensitive(!use_predefined);
+#endif /* GTK4_PORT_DONE */
     m_macropixel_frame.set_sensitive(!use_predefined);
 
+#ifdef GTK4_PORT_DONE
     m_color_space_frame.set_color_space(pixel_format.color_space);
+#endif /* GTK4_PORT_DONE */
 
     auto fix_size =
         [](auto& container, const Index new_size, auto connect) {
@@ -351,7 +361,7 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
         m_plane_frame.m_planes,
         planes_count,
         [this, &update_handler](auto& plane_out) {
-            m_plane_frame.m_planes_box.pack_start(plane_out);
+            m_plane_frame.m_planes_box.append(plane_out);
             plane_out.m_row_count_entry.signal_value_changed().connect(
                 update_handler);
         });
@@ -365,7 +375,7 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
             plane_out.m_rows,
             rows_count,
             [&plane_out, &update_handler](auto& row_out) {
-                plane_out.m_box.pack_start(row_out);
+                plane_out.m_box.append(row_out);
                 row_out.m_entry_count_entry.signal_value_changed().connect(
                     update_handler);
             });
@@ -379,7 +389,7 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
                 row_out.m_entries,
                 entries_count,
                 [&row_out, &update_handler](auto& entry_out) {
-                    row_out.pack_start(entry_out);
+                    row_out.append(entry_out);
                     entry_out.m_bit_count_entry.signal_value_changed().connect(
                         update_handler);
                 });
@@ -416,7 +426,7 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
                 pixel_out.m_samples,
                 components_count,
                 [&pixel_out, &update_handler](auto& component_out) {
-                    pixel_out.m_box.pack_start(component_out);
+                    pixel_out.m_box.append(component_out);
                     component_out.m_plane_entry.signal_value_changed().connect(
                         update_handler);
                     component_out.m_row_entry.signal_value_changed().connect(
@@ -434,8 +444,6 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
             }
         }
     }
-
-    show_all();
 }
 /*----------------------------------------------------------------------------*/
 sigc::signal<void()>& YUV_tool::Format_chooser_widget::

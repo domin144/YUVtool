@@ -19,9 +19,6 @@
  *
  */
 
-#ifdef GTK4_PORT_DONE
-#include <resolution_and_format_dialog.h>
-#endif /* GTK4_PORT_DONE */
 #include <viewer_frame.h>
 #include <yuv/Coordinates.h>
 #include <yuv/Errors.h>
@@ -306,7 +303,6 @@ void Viewer_frame::on_format_dialog_finish(const int response_id)
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_file_close()
 {
-#ifdef GTK4_PORT_DONE
     if(m_yuv_file.is_open())
     {
         m_yuv_file.close();
@@ -315,7 +311,6 @@ void Viewer_frame::on_action_file_close()
     {
         std::cerr << "tried to close file, while none is open\n";
     }
-#endif /* GTK4_PORT_DONE */
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_help_info()

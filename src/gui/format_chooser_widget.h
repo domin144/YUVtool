@@ -20,7 +20,9 @@
 #ifndef FORMAT_CHOOSER_DIALOG_H
 #define FORMAT_CHOOSER_DIALOG_H
 
+#ifdef GTK4_PORT_DONE
 #include <color_space_frame.h>
+#endif /* GTK4_PORT_DONE */
 
 #include <yuv/Pixel_format.h>
 
@@ -28,7 +30,9 @@
 #include <gtkmm/dialog.h>
 #include <gtkmm/frame.h>
 #include <gtkmm/grid.h>
+#include <gtkmm/label.h>
 #include <gtkmm/liststore.h>
+#include <gtkmm/notebook.h>
 #include <gtkmm/spinbutton.h>
 
 namespace YUV_tool {
@@ -143,7 +147,9 @@ private:
 
     Gtk::ComboBox m_predefined_choice;
     Gtk::Notebook m_notebook;
+#ifdef GTK4_PORT_DONE
     Color_space_frame m_color_space_frame;
+#endif /* GTK4_PORT_DONE */
     Plane_frame m_plane_frame;
     Macropixel_frame m_macropixel_frame;
 
