@@ -30,9 +30,7 @@ Format_chooser_widget::Format_chooser_widget() :
 
     m_box.append(m_predefined_choice);
     m_box.append(m_notebook);
-#ifdef GTK4_PORT_DONE
     m_notebook.append_page(m_color_space_frame, "Color space");
-#endif /* GTK4_PORT_DONE */
     m_notebook.append_page(m_plane_frame, "Planes");
     m_notebook.append_page(m_macropixel_frame, "Macropixel");
 
@@ -57,9 +55,7 @@ Format_chooser_widget::Format_chooser_widget() :
 
     auto update_handler = sigc::mem_fun(*this, &Format_chooser_widget::update);
     m_predefined_choice.signal_changed().connect(update_handler);
-#ifdef GTK4_PORT_DONE
     m_color_space_frame.signal_color_space_changed().connect(update_handler);
-#endif /* GTK4_PORT_DONE */
     m_plane_frame.m_planes_count_entry.signal_value_changed().connect(
         update_handler);
     m_macropixel_frame.m_rows_entry.signal_value_changed().connect(
@@ -83,9 +79,7 @@ const Pixel_format Format_chooser_widget::get_pixel_format() const
 
     Pixel_format result;
 
-#ifdef GTK4_PORT_DONE
     result.color_space = m_color_space_frame.get_color_space();
-#endif /* GTK4_PORT_DONE */
 
     const Index planes_count =
         m_plane_frame.m_planes_count_entry.get_value_as_int();
@@ -333,14 +327,10 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
         (*m_predefined_choice.get_active())[m_predefined_column_record.pointer];
     const bool use_predefined = predefined_format != nullptr;
     m_plane_frame.set_sensitive(!use_predefined);
-#ifdef GTK4_PORT_DONE
     m_color_space_frame.set_sensitive(!use_predefined);
-#endif /* GTK4_PORT_DONE */
     m_macropixel_frame.set_sensitive(!use_predefined);
 
-#ifdef GTK4_PORT_DONE
     m_color_space_frame.set_color_space(pixel_format.color_space);
-#endif /* GTK4_PORT_DONE */
 
     auto fix_size =
         [](auto& container, const Index new_size, auto connect) {

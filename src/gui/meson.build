@@ -2,8 +2,8 @@ gtkmm4_dep = dependency('gtkmm-4.0')
 epoxy_dep = dependency('epoxy')
 
 yuvtool_sources = [
-    # 'color_space_frame.cpp',
-    # 'color_space_frame.h',
+    'color_space_frame.cpp',
+    'color_space_frame.h',
     # 'drawer_gl.cpp',
     # 'drawer_gl.h',
     'format_chooser_widget.cpp',

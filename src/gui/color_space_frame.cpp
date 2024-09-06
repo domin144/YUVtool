@@ -21,24 +21,23 @@
 
 namespace YUV_tool {
 /*----------------------------------------------------------------------------*/
-Color_space_frame::Color_group::Color_group(
-        const std::string &name) :
-    m_box(Gtk::ORIENTATION_HORIZONTAL),
+Color_space_frame::Color_group::Color_group(const std::string& name) :
+    m_box(Gtk::Orientation::HORIZONTAL),
     m_label(name),
     m_entry(Gtk::Adjustment::create(0, 0, 1, 0.01, 0.1), 0, 3)
 {
-    m_box.pack_start(m_label);
-    m_box.pack_start(m_entry);
+    m_box.append(m_label);
+    m_box.append(m_entry);
 }
 /*----------------------------------------------------------------------------*/
 Color_space_frame::Component_configurator::Component_configurator() :
-    m_box(Gtk::ORIENTATION_VERTICAL),
+    m_box(Gtk::Orientation::VERTICAL),
     m_colors{
         std::string("R"),
         std::string("G"),
         std::string("B"),
         std::string("A")},
-    m_valid_range_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_valid_range_box(Gtk::Orientation::HORIZONTAL),
     m_valid_range_label("valid range:"),
     m_valid_range_low_entry(
         Gtk::Adjustment::create(0, -1000, 1000, 0.001),
@@ -48,7 +47,7 @@ Color_space_frame::Component_configurator::Component_configurator() :
         Gtk::Adjustment::create(0, -1000, 1000, 0.001),
         0,
         3),
-    m_coded_range_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_coded_range_box(Gtk::Orientation::HORIZONTAL),
     m_coded_range_label("coded range:"),
     m_coded_range_low_entry(
         Gtk::Adjustment::create(0, -1000, 1000, 0.001),
@@ -59,20 +58,17 @@ Color_space_frame::Component_configurator::Component_configurator() :
         0,
         3)
 {
-    m_frame.add(m_box);
+    m_frame.set_child(m_box);
     for (auto &color : m_colors)
-        m_box.pack_start(color.m_box);
-    m_box.pack_start(m_valid_range_box);
-    m_valid_range_box.pack_start(m_valid_range_label);
-    m_valid_range_box.pack_start(m_valid_range_low_entry);
-    m_valid_range_box.pack_start(m_valid_range_high_entry);
-    m_box.pack_start(m_coded_range_box);
-    m_coded_range_box.pack_start(m_coded_range_label);
-    m_coded_range_box.pack_start(m_coded_range_low_entry);
-    m_coded_range_box.pack_start(m_coded_range_high_entry);
-
-    m_frame.show_all();
-    m_frame.set_no_show_all(true);
+        m_box.append(color.m_box);
+    m_box.append(m_valid_range_box);
+    m_valid_range_box.append(m_valid_range_label);
+    m_valid_range_box.append(m_valid_range_low_entry);
+    m_valid_range_box.append(m_valid_range_high_entry);
+    m_box.append(m_coded_range_box);
+    m_coded_range_box.append(m_coded_range_label);
+    m_coded_range_box.append(m_coded_range_low_entry);
+    m_coded_range_box.append(m_coded_range_high_entry);
 }
 /*----------------------------------------------------------------------------*/
 Color_space_frame::Color_space_column_record::Color_space_column_record()
@@ -82,26 +78,25 @@ Color_space_frame::Color_space_column_record::Color_space_column_record()
 }
 /*----------------------------------------------------------------------------*/
 Color_space_frame::Color_space_frame() :
-    m_box(Gtk::ORIENTATION_VERTICAL),
-    m_predefined_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_box(Gtk::Orientation::VERTICAL),
+    m_predefined_box(Gtk::Orientation::HORIZONTAL),
     m_predefined_label("color_space:"),
-    m_component_count_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_component_count_box(Gtk::Orientation::HORIZONTAL),
     m_component_count_label("components_count:"),
     m_component_count_entry(
         Gtk::Adjustment::create(0, 0, Rgba_component_count)),
     m_component_box()
 {
     set_label("Color space");
-    set_shadow_type(Gtk::SHADOW_ETCHED_OUT);
 
-    add(m_box);
-    m_box.pack_start(m_predefined_box);
-    m_predefined_box.pack_start(m_predefined_label);
-    m_predefined_box.pack_start(m_predefined_entry);
-    m_box.pack_start(m_component_count_box);
-    m_component_count_box.pack_start(m_component_count_label);
-    m_component_count_box.pack_start(m_component_count_entry);
-    m_box.pack_start(m_component_box);
+    set_child(m_box);
+    m_box.append(m_predefined_box);
+    m_predefined_box.append(m_predefined_label);
+    m_predefined_box.append(m_predefined_entry);
+    m_box.append(m_component_count_box);
+    m_component_count_box.append(m_component_count_label);
+    m_component_count_box.append(m_component_count_entry);
+    m_box.append(m_component_box);
     m_component_box.append_page(m_components[0].m_frame, "Component 0");
     m_component_box.append_page(m_components[1].m_frame, "Component 1");
     m_component_box.append_page(m_components[2].m_frame, "Component 2");
@@ -135,7 +130,8 @@ Color_space_frame::Color_space_frame() :
     m_predefined_entry.pack_start(m_predefined_column_record.label);
     m_predefined_entry.set_active(iter);
 
-    const auto update_handler = sigc::mem_fun(this, &Color_space_frame::update);
+    const auto update_handler =
+        sigc::mem_fun(*this, &Color_space_frame::update);
     m_predefined_entry.signal_changed().connect(update_handler);
     m_component_count_entry.signal_value_changed().connect(update_handler);
     for (auto &component : m_components)
