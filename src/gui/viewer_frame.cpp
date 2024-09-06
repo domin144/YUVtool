@@ -19,27 +19,33 @@
  *
  */
 
+#ifdef GTK4_PORT_DONE
 #include <resolution_and_format_dialog.h>
+#endif /* GTK4_PORT_DONE */
 #include <viewer_frame.h>
+#include <yuv/Coordinates.h>
 #include <yuv/Errors.h>
 
 #include <giomm/menu.h>
 #include <giomm/simpleactiongroup.h>
+#include <glibmm/refptr.h>
 #include <gtkmm/builder.h>
-#include <gtkmm/filechooserdialog.h>
-#include <gtkmm/menubar.h>
-#include <gtkmm/messagedialog.h>
-#include <gtkmm/popovermenu.h>
-#include <gtkmm/socket.h>
-#include <gtkmm/stock.h>
+#include <gtkmm/dialog.h>
+#include <gtkmm/popovermenubar.h>
+#include <sigc++/functors/mem_fun.h>
+
+#include <filesystem>
 #include <iostream>
+#include <memory>
 
 namespace YUV_tool {
 
 Viewer_frame::Viewer_frame() :
-    m_box(Gtk::ORIENTATION_VERTICAL)
+    m_box(Gtk::Orientation::VERTICAL)
 {
-    m_drawer_gl.attach_yuv_file(&m_yuv_file);
+#ifdef GTK4_PORT_DONE
+    // m_drawer_gl.attach_yuv_file(&m_yuv_file);
+#endif /* GTK4_PORT_DONE */
 
     /* File menu action group */
     m_file_action_group = Gio::SimpleActionGroup::create();
@@ -122,24 +128,24 @@ Viewer_frame::Viewer_frame() :
 
     set_default_size(400, 250);
 
-    Glib::RefPtr<Gio::Menu> menu =
-        Glib::RefPtr<Gio::Menu>::cast_dynamic(m_builder->get_object("menubar"));
-    m_box.pack_start(*Gtk::make_managed<Gtk::MenuBar>(menu), Gtk::PACK_SHRINK);
+    Glib::RefPtr<Gio::Menu> menu = m_builder->get_object<Gio::Menu>("menubar");
+    auto menu_bar = Gtk::make_managed<Gtk::PopoverMenuBar>(menu);
+    m_box.append(*menu_bar);
 
     // Gtk::Widget *tool_bar = m_ui_manager->get_widget("/tool_bar");
     // m_box.pack_start( *tool_bar, Gtk::PACK_SHRINK );
 
+#ifdef GTK4_PORT_DONE
     m_scroll_adapter.get_drawing_area().signal_render().connect(
-                sigc::mem_fun(*this, &Viewer_frame::on_action_draw_event));
+        sigc::mem_fun(*this, &Viewer_frame::on_action_draw_event), true);
     m_scroll_adapter.get_drawing_area().signal_realize().connect(
-                sigc::mem_fun(*this, &Viewer_frame::on_action_gl_context_init));
+        sigc::mem_fun(*this, &Viewer_frame::on_action_gl_context_init));
 
     m_scroll_adapter.set_internal_size(Vector<Unit::pixel>(256, 128));
-    m_box.pack_start(m_scroll_adapter, Gtk::PACK_EXPAND_WIDGET);
+    m_box.append(m_scroll_adapter);
+#endif /* GTK4_PORT_DONE */
 
-    add(m_box);
-
-    show_all();
+    set_child(m_box);
 }
 //------------------------------------------------------------------------------
 Viewer_frame::~Viewer_frame()
@@ -153,32 +159,23 @@ void Viewer_frame::on_action_file_quit()
 }
 //------------------------------------------------------------------------------
 namespace {
-void print_gdk_window(
+void print_allocation(
         std::ostream &os,
         const std::string &name,
-        const Glib::RefPtr<Gdk::Window> window)
+        const Gtk::Widget &widget)
 {
-    int x, y;
-    window->get_position(x, y);
-    os
-            << name << " : "
-            << x << 'x' << y << " + "
-            << window->get_width() << 'x' << window->get_height() << '\n';
-}
-void check_parent_child(
-        std::ostream &os,
-        const Glib::RefPtr<Gdk::Window> parent,
-        const Glib::RefPtr<Gdk::Window> child)
-{
-    bool result =
-            parent == child->get_parent();
-    os << (result ? "is parent" : "is not parent") << '\n';
+    Gtk::Allocation allocation = widget.get_allocation();
+    os << name << " : " << allocation.get_x() << 'x' << allocation.get_y()
+       << " + " << allocation.get_width() << 'x' << allocation.get_height()
+       << '\n';
 }
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_show_size()
 {
-    Gtk::MessageDialog dialog( *this, "Size of the drawing area." );
+    m_message_dialog = std::make_shared<Gtk::MessageDialog>(
+        *this, "Size of the drawing area.");
+    // Gtk::MessageDialog dialog( *this, "Size of the drawing area." );
 
     std::stringstream ss;
 
@@ -202,8 +199,8 @@ void Viewer_frame::on_action_show_size()
 //        << visible_area.get_x() << 'x' << visible_area.get_y() << " + "
 //        << visible_area.get_width() << 'x' << visible_area.get_height() << '\n';
 
-    print_gdk_window(ss, "frame", get_window());
-    check_parent_child(ss, get_window(), m_scroll_adapter.get_window());
+    print_allocation(ss, "frame", *this);
+//    check_parent_child(ss, get_window(), m_scroll_adapter.get_window());
 //    check_parent_child(ss, get_window(), m_scrolled_window.get_window());
 //    print_gdk_window(ss, "scrolled_window", m_scrolled_window.get_window());
 //    check_parent_child(ss, m_scrolled_window.get_window(), m_viewport.get_window());
@@ -232,73 +229,90 @@ void Viewer_frame::on_action_show_size()
 //            << m_sfml_window.getPosition().x << 'x'
 //            << m_sfml_window.getPosition().y << '\n';
 
-    dialog.set_secondary_text( ss.str() );
+    m_message_dialog->set_secondary_text(ss.str());
 
-    dialog.run();
+    m_message_dialog->signal_response().connect(
+        sigc::mem_fun(*this, &Viewer_frame::on_message_dialog_response));
+    m_message_dialog->show();
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_file_open()
 {
-    std::string file_name;
+    m_file_dialog = std::make_shared<Gtk::FileChooserDialog>(
+        *this, "Choose YUV file.", Gtk::FileChooserDialog::Action::OPEN);
+
+    m_file_dialog->add_button("Cancel", Gtk::ResponseType::CANCEL);
+    m_file_dialog->add_button("Select", Gtk::ResponseType::OK);
+    m_file_dialog->signal_response().connect(
+        sigc::mem_fun(*this, &Viewer_frame::on_file_dialog_finish));
+    m_file_dialog->show();
+}
+//------------------------------------------------------------------------------
+void Viewer_frame::on_file_dialog_finish(const int response_id)
+{
+    std::filesystem::path file_name;
+    switch(response_id)
     {
-        Gtk::FileChooserDialog file_dialog(
-                    *this,
-                    "Choose YUV file.",
-                    Gtk::FILE_CHOOSER_ACTION_OPEN);
-
-        file_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
-        file_dialog.add_button("Select", Gtk::RESPONSE_OK);
-
-        const int result = file_dialog.run();
-
-        switch(result)
-        {
-        case Gtk::RESPONSE_OK:
-            file_name = file_dialog.get_filename();
-            break;
-        case Gtk::RESPONSE_CANCEL:
-            return;
-        default:
-            std::cerr << "unknown responce of file chooser dialog\n";
-            return;
-        }
+    case Gtk::ResponseType::OK:
+        file_name = m_file_dialog->get_file()->get_path();
+        break;
+    case Gtk::ResponseType::CANCEL:
+        return;
+    default:
+        std::cerr << "unknown responce of file chooser dialog\n";
+        return;
     }
 
     try
     {
+#ifdef GTK4_PORT_DONE
         m_yuv_file.open(file_name);
+#endif /* GTK4_PORT_DONE */
     }
     catch(std::runtime_error &e)
     {
         std::cerr << "failed to open file: " << file_name << ", " << e.what()
                   << '\n';
     }
+    m_file_dialog->hide();
+    m_file_dialog.reset();
 
+#ifdef GTK4_PORT_DONE
+    m_format_dialog = std::make_shared<Resolution_and_format_dialog>(*this);
+    m_format_dialog->set_pixel_format(m_yuv_file.get_pixel_format());
+    m_format_dialog->set_resolution(m_yuv_file.get_resolution());
+    m_format_dialog->signal_response().connect(
+        sigc::mem_fun(*this, &Viewer_frame::on_format_dialog_finish));
+    m_format_dialog->show();
+#endif /* GTK4_PORT_DONE */
+}
+//------------------------------------------------------------------------------
+void Viewer_frame::on_format_dialog_finish(const int response_id)
+{
+    switch (response_id)
     {
-        Resolution_and_format_dialog dialog(*this);
-        dialog.set_pixel_format(m_yuv_file.get_pixel_format());
-        dialog.set_resolution(m_yuv_file.get_resolution());
-
-        const int result = dialog.run();
-
-        switch(result)
-        {
-        case Gtk::RESPONSE_OK:
-            m_yuv_file.set_resolution(dialog.get_resolution());
-            m_yuv_file.set_pixel_format(dialog.get_pixel_format());
-            m_scroll_adapter.set_internal_size(m_yuv_file.get_resolution());
-            break;
-        case Gtk::RESPONSE_CANCEL:
-            return;
-        default:
-            std::cerr << "unknown responce of format chooser dialog\n";
-            return;
-        }
+    case Gtk::ResponseType::OK:
+#ifdef GTK4_PORT_DONE
+        m_yuv_file.set_resolution(m_format_dialog->get_resolution());
+        m_yuv_file.set_pixel_format(m_format_dialog->get_pixel_format());
+        m_scroll_adapter.set_internal_size(m_yuv_file.get_resolution());
+        break;
+#endif /* GTK4_PORT_DONE */
+    case Gtk::ResponseType::CANCEL:
+        return;
+    default:
+        std::cerr << "unknown responce of format chooser dialog\n";
+        return;
     }
+#ifdef GTK4_PORT_DONE
+    m_format_dialog->hide();
+    m_format_dialog->reset();
+#endif /* GTK4_PORT_DONE */
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_file_close()
 {
+#ifdef GTK4_PORT_DONE
     if(m_yuv_file.is_open())
     {
         m_yuv_file.close();
@@ -307,51 +321,40 @@ void Viewer_frame::on_action_file_close()
     {
         std::cerr << "tried to close file, while none is open\n";
     }
+#endif /* GTK4_PORT_DONE */
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_help_info()
 {
     std::cerr << "Not implemented yet. Sorry.\n";
-    Gtk::MessageDialog dialog( *this, "Help" );
+    m_message_dialog = std::make_shared<Gtk::MessageDialog>(*this, "Help");
 
     std::stringstream ss;
-
     ss << "Not implemented yet. Sorry";
 
-    dialog.set_secondary_text( ss.str() );
-    int result = dialog.run();
-
-    switch(result)
-    {
-        case(Gtk::RESPONSE_OK):
-        {
-          std::cout << "DEBUG: OK clicked." << std::endl;
-          break;
-        }
-        case(Gtk::RESPONSE_CANCEL):
-        {
-          std::cout << "DEBUG: Cancel clicked." << std::endl;
-          break;
-        }
-        default:
-        {
-          std::cout << "DEBUG: Unexpected button clicked." << std::endl;
-          break;
-        }
-    }
+    m_message_dialog->set_secondary_text(ss.str());
+    m_message_dialog->signal_response().connect(
+        sigc::mem_fun(*this, &Viewer_frame::on_message_dialog_response));
+    m_message_dialog->show();
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_help_about()
 {
     std::cerr << "Not implemented yet. Sorry.\n";
-    Gtk::MessageDialog dialog( *this, "About..." );
+    m_message_dialog = std::make_shared<Gtk::MessageDialog>(*this, "About...");
 
     std::stringstream ss;
-
     ss << "Not implemented yet. Sorry";
 
-    dialog.set_secondary_text( ss.str() );
-    dialog.run();
+    m_message_dialog->set_secondary_text(ss.str());
+    m_message_dialog->signal_response().connect(
+        sigc::mem_fun(*this, &Viewer_frame::on_message_dialog_response));
+    m_message_dialog->show();
+}
+//------------------------------------------------------------------------------
+void Viewer_frame::on_message_dialog_response(int)
+{
+    m_message_dialog.reset();
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::draw_frame()
@@ -359,7 +362,11 @@ void Viewer_frame::draw_frame()
     try
     {
         const Gdk::Rectangle visible_area =
-                m_scroll_adapter.get_visible_area();
+#ifdef GTK4_PORT_DONE
+            m_scroll_adapter.get_visible_area();
+#else /* GTK4_PORT_DONE */
+            {};
+#endif /* GTK4_PORT_DONE */
         const Coordinates<Unit::pixel, Reference_point::scaled_picture>
                 visible_area_start(
                     visible_area.get_x(),
@@ -377,10 +384,12 @@ void Viewer_frame::draw_frame()
                       << visible_area.get_height() << ')' << std::endl;
         }
 
+#ifdef GTK4_PORT_DONE
         m_drawer_gl.draw(
                     0,
                     make_rectangle(visible_area_start, visible_area_size),
                     1.0);
+#endif /* GTK4_PORT_DONE */
     }
     catch(...)
     {
@@ -401,16 +410,20 @@ bool Viewer_frame::on_action_draw_event(const Glib::RefPtr<Gdk::GLContext>&)
 /*----------------------------------------------------------------------------*/
 void Viewer_frame::on_action_gl_context_init()
 {
+#ifdef GTK4_PORT_DONE
     m_scroll_adapter.get_drawing_area().make_current();
     /* At least for now, the size of the buffer must be sufficient to hold all
      * the visible tiles. */
     m_drawer_gl.initialize(256);
+#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 void Viewer_frame::on_action_gl_context_deinit()
 {
+#ifdef GTK4_PORT_DONE
     m_scroll_adapter.get_drawing_area().make_current();
     m_drawer_gl.deinitialize();
+#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 } /* namespace YUV_tool */

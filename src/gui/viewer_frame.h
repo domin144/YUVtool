@@ -20,14 +20,19 @@
 #ifndef VIEWER_FRAME_H
 #define VIEWER_FRAME_H
 
+#ifdef GTK4_PORT_DONE
 #include <scroll_adapter.h>
 #include <drawer_gl.h>
 #include <yuv/Yuv_file.h>
+#endif /* GTK4_PORT_DONE */
 
 #include <giomm/simpleactiongroup.h>
+#include <glibmm/refptr.h>
 #include <gtkmm/box.h>
 #include <gtkmm/builder.h>
 #include <gtkmm/button.h>
+#include <gtkmm/filechooserdialog.h>
+#include <gtkmm/messagedialog.h>
 #include <gtkmm/window.h>
 
 namespace YUV_tool {
@@ -42,9 +47,12 @@ private:
     void on_action_file_quit();
     void on_action_show_size();
     void on_action_file_open();
+    void on_file_dialog_finish(int response_id);
+    void on_format_dialog_finish(int response_id);
     void on_action_file_close();
     void on_action_help_info();
     void on_action_help_about();
+    void on_message_dialog_response(int);
     bool on_action_draw_event(const Glib::RefPtr<Gdk::GLContext> &context);
     void on_action_gl_context_init();
     void on_action_gl_context_deinit();
@@ -55,9 +63,16 @@ private:
     Glib::RefPtr<Gio::SimpleActionGroup> m_help_action_group;
     Glib::RefPtr<Gtk::Builder> m_builder;
     Gtk::Box m_box;
+#ifdef GTK4_PORT_DONE
     Yuv_file m_yuv_file;
     Drawer_gl m_drawer_gl;
     Scroll_adapter m_scroll_adapter;
+#endif /* GTK4_PORT_DONE */
+    Glib::RefPtr<Gtk::MessageDialog> m_message_dialog;
+    Glib::RefPtr<Gtk::FileChooserDialog> m_file_dialog;
+#ifdef GTK4_PORT_DONE
+    Glib::RefPtr<Resolution_and_format_dialog> m_format_dialog;
+#endif /* GTK4_PORT_DONE */
 };
 
 } /* namespace YUV_tool */

@@ -18,17 +18,16 @@
  *
  */
 
-#include <gtkmm/application.h>
-#include <gtkmm/window.h>
+#include <viewer_frame.h>
 
-// #include "viewer_frame.h"
+#include <gtkmm/application.h>
 
 int main(int argc, char* argv[])
 {
-    // using namespace YUV_tool;
+    using namespace YUV_tool;
 
     Glib::RefPtr<Gtk::Application> app =
         Gtk::Application::create("org.yuvtool");
 
-    return app->make_window_and_run<Gtk::Window>(argc, argv);
+    return app->make_window_and_run<Viewer_frame>(argc, argv);
 }

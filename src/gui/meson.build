@@ -15,8 +15,8 @@ yuvtool_sources = [
     # 'resolution_chooser_widget.h',
     # 'scroll_adapter.cpp',
     # 'scroll_adapter.h',
-    # 'viewer_frame.cpp',
-    # 'viewer_frame.h',
+    'viewer_frame.cpp',
+    'viewer_frame.h',
     # 'yuv_tool_application.cpp',
     # 'yuv_tool_application.h'
 ]
