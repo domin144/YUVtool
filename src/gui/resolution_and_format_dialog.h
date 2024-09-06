@@ -21,9 +21,7 @@
 #define RESOLUTION_AND_FORMAT_DIALOG_H
 
 #include <format_chooser_widget.h>
-#ifdef GTK4_PORT_DONE
 #include <resolution_chooser_widget.h>
-#endif /* GTK4_PORT_DONE */
 #include <yuv/Pixel_format.h>
 
 #include <gtkmm/dialog.h>
@@ -36,9 +34,7 @@ private:
     Gtk::Box m_box {Gtk::Orientation::VERTICAL};
 
     Format_chooser_widget m_format_widget;
-#ifdef GTK4_PORT_DONE
     Resolution_chooser_widget m_resolution_widget;
-#endif /* GTK4_PORT_DONE */
 
     sigc::signal<void()> m_signal_pixel_format_changed;
     sigc::signal<void()> m_signal_resolution_changed;

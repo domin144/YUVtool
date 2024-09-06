@@ -19,30 +19,32 @@
  */
 #include <resolution_chooser_widget.h>
 
+#include <gtkmm/adjustment.h>
+
 namespace YUV_tool {
 /*----------------------------------------------------------------------------*/
 Resolution_chooser_widget::Resolution_chooser_widget() :
-    m_box(Gtk::ORIENTATION_VERTICAL),
-    m_x_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_box(Gtk::Orientation::VERTICAL),
+    m_x_box(Gtk::Orientation::HORIZONTAL),
     m_x_label("resolution x:"),
     m_x_entry(Gtk::Adjustment::create(0, 0, 1 << 16)),
-    m_y_box(Gtk::ORIENTATION_HORIZONTAL),
+    m_y_box(Gtk::Orientation::HORIZONTAL),
     m_y_label("resolution y:"),
     m_y_entry(Gtk::Adjustment::create(0, 0, 1 << 16))
 {
-    add(m_box);
+    set_child(m_box);
 
-    m_box.pack_start(m_x_box);
-    m_box.pack_start(m_y_box);
+    m_box.append(m_x_box);
+    m_box.append(m_y_box);
 
-    m_x_box.pack_start(m_x_label);
-    m_x_box.pack_start(m_x_entry);
+    m_x_box.append(m_x_label);
+    m_x_box.append(m_x_entry);
 
-    m_y_box.pack_start(m_y_label);
-    m_y_box.pack_start(m_y_entry);
+    m_y_box.append(m_y_label);
+    m_y_box.append(m_y_entry);
 
     auto on_update_slot =
-        sigc::mem_fun(this, &Resolution_chooser_widget::on_update);
+        sigc::mem_fun(*this, &Resolution_chooser_widget::on_update);
     m_x_entry.signal_value_changed().connect(on_update_slot);
     m_y_entry.signal_value_changed().connect(on_update_slot);
 }

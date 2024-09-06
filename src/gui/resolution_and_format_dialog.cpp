@@ -33,20 +33,16 @@ Resolution_and_format_dialog::Resolution_and_format_dialog(
     get_content_area()->append(m_box);
 
     m_box.append(m_format_widget);
-#ifdef GTK4_PORT_DONE
     m_box.append(m_resolution_widget);
-#endif /* GTK4_PORT_DONE */
 
     m_format_widget.signal_pixel_format_changed().connect([this]() {
         update_ok_button_state();
         m_signal_pixel_format_changed();
     });
-#ifdef GTK4_PORT_DONE
     m_resolution_widget.signal_resolution_changed().connect([this]() {
         update_ok_button_state();
         m_signal_resolution_changed();
     });
-#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 Pixel_format Resolution_and_format_dialog::get_pixel_format() const
@@ -63,32 +59,23 @@ void Resolution_and_format_dialog::set_pixel_format(
 /*----------------------------------------------------------------------------*/
 Vector<Unit::pixel> Resolution_and_format_dialog::get_resolution() const
 {
-    return
-#ifdef GTK4_PORT_DONE
-        m_resolution_widget.get_resolution();
-#else /* GTK4_PORT_DONE */
-        {};
-#endif /* GTK4_PORT_DONE */
+    return m_resolution_widget.get_resolution();
 }
 /*----------------------------------------------------------------------------*/
 void Resolution_and_format_dialog::set_resolution(
     const Vector<Unit::pixel>& resolution)
 {
-#ifdef GTK4_PORT_DONE
     m_resolution_widget.set_resolution(resolution);
-#endif /* GTK4_PORT_DONE */
     update_ok_button_state();
 }
 /*----------------------------------------------------------------------------*/
 void Resolution_and_format_dialog::update_ok_button_state()
 {
-#ifdef GTK4_PORT_DONE
     const auto params = Precalculated_buffer_parameters::create(
         m_format_widget.get_pixel_format(),
         m_resolution_widget.get_resolution());
 
     set_response_sensitive(Gtk::ResponseType::OK, params.has_value());
-#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 } /* namespace YUV_tool */

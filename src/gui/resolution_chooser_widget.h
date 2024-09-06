@@ -24,6 +24,7 @@
 
 #include <gtkmm/box.h>
 #include <gtkmm/frame.h>
+#include <gtkmm/label.h>
 #include <gtkmm/spinbutton.h>
 
 namespace YUV_tool {
