@@ -333,14 +333,18 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
     m_color_space_frame.set_color_space(pixel_format.color_space);
 
     auto fix_size =
-        [](auto& container, const Index new_size, auto connect) {
+        [](auto& container, const Index new_size, auto add, auto remove) {
+            using Element_type = std::decay_t<decltype(*container[0])>;
             const Index old_size = container.size();
+            for (Index i = new_size; i < old_size; ++i)
+            {
+                remove(*container[i]);
+            }
             container.resize(new_size);
             for (Index i = old_size; i < new_size; ++i)
             {
-                container[i] =
-                    std::make_unique<std::decay_t<decltype(*container[i])>>();
-                connect(*container[i]);
+                container[i] = std::make_unique<Element_type>();
+                add(*container[i]);
             }
         };
     auto update_handler = sigc::mem_fun(*this, &Format_chooser_widget::update);
@@ -354,6 +358,9 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
             m_plane_frame.m_planes_box.append(plane_out);
             plane_out.m_row_count_entry.signal_value_changed().connect(
                 update_handler);
+        },
+        [this](auto& plane_out) {
+            m_plane_frame.m_planes_box.remove(plane_out);
         });
     for (Index i = 0; i < planes_count; ++i)
     {
@@ -368,6 +375,9 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
                 plane_out.m_box.append(row_out);
                 row_out.m_entry_count_entry.signal_value_changed().connect(
                     update_handler);
+            },
+            [&plane_out](auto& row_out) {
+                plane_out.m_box.remove(row_out);
             });
         for (Index j = 0; j < rows_count; ++j)
         {
@@ -382,6 +392,9 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
                     row_out.append(entry_out);
                     entry_out.m_bit_count_entry.signal_value_changed().connect(
                         update_handler);
+                },
+                [&row_out](auto& entry_out) {
+                    row_out.remove(entry_out);
                 });
             for (Index k = 0; k < entries_count; ++k)
             {
@@ -401,7 +414,10 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
         m_macropixel_frame.m_pixel_grid.remove(*pixel);
     }
     fix_size(
-        m_macropixel_frame.m_pixels, mp_size.x() * mp_size.y(), [](auto&) {});
+        m_macropixel_frame.m_pixels,
+        mp_size.x() * mp_size.y(),
+        [](auto&) {},
+        [](auto&) {});
     m_macropixel_frame.reshape();
 
     for (Index y = 0; y < mp_size.y(); ++y)
@@ -423,6 +439,9 @@ void Format_chooser_widget::update_entries(const Pixel_format &pixel_format)
                         update_handler);
                     component_out.m_index_entry.signal_value_changed().connect(
                         update_handler);
+                },
+                [&pixel_out](auto& component_out) {
+                    pixel_out.m_box.remove(component_out);
                 });
             for (Index j = 0; j < components_count; ++j)
             {
