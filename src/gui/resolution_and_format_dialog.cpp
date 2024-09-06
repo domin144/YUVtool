@@ -17,6 +17,7 @@
  * along with YUVtool.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include "gtkmm/dialog.h"
 #include <resolution_and_format_dialog.h>
 
 namespace YUV_tool {
@@ -25,14 +26,15 @@ Resolution_and_format_dialog::Resolution_and_format_dialog(
     Gtk::Window& parent) :
     Gtk::Dialog("Choose resolution and pixel format", parent, true)
 {
-    add_button("OK", Gtk::RESPONSE_OK);
-    add_button("Cancel", Gtk::RESPONSE_CANCEL);
+    add_button("OK", Gtk::ResponseType::OK);
+    add_button("Cancel", Gtk::ResponseType::CANCEL);
     /* TODO: add preview button */
 
-    get_content_area()->add(m_box);
+    get_content_area()->append(m_box);
 
-    m_box.pack_start(m_format_widget);
-    m_box.pack_start(m_resolution_widget);
+#ifdef GTK4_PORT_DONE
+    m_box.append(m_format_widget);
+    m_box.append(m_resolution_widget);
 
     m_format_widget.signal_pixel_format_changed().connect([this]() {
         update_ok_button_state();
@@ -42,41 +44,56 @@ Resolution_and_format_dialog::Resolution_and_format_dialog(
         update_ok_button_state();
         m_signal_resolution_changed();
     });
-
-    show_all();
+#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 Pixel_format Resolution_and_format_dialog::get_pixel_format() const
 {
-    return m_format_widget.get_pixel_format();
+    return
+#ifdef GTK4_PORT_DONE
+        m_format_widget.get_pixel_format();
+#else /* GTK4_PORT_DONE */
+        {};
+#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 void Resolution_and_format_dialog::set_pixel_format(
     const Pixel_format& pixel_format)
 {
+#ifdef GTK4_PORT_DONE
     m_format_widget.set_pixel_format(pixel_format);
+#endif /* GTK4_PORT_DONE */
     update_ok_button_state();
 }
 /*----------------------------------------------------------------------------*/
 Vector<Unit::pixel> Resolution_and_format_dialog::get_resolution() const
 {
-    return m_resolution_widget.get_resolution();
+    return
+#ifdef GTK4_PORT_DONE
+        m_resolution_widget.get_resolution();
+#else /* GTK4_PORT_DONE */
+        {};
+#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 void Resolution_and_format_dialog::set_resolution(
     const Vector<Unit::pixel>& resolution)
 {
+#ifdef GTK4_PORT_DONE
     m_resolution_widget.set_resolution(resolution);
+#endif /* GTK4_PORT_DONE */
     update_ok_button_state();
 }
 /*----------------------------------------------------------------------------*/
 void Resolution_and_format_dialog::update_ok_button_state()
 {
+#ifdef GTK4_PORT_DONE
     const auto params = Precalculated_buffer_parameters::create(
         m_format_widget.get_pixel_format(),
         m_resolution_widget.get_resolution());
 
-    set_response_sensitive(Gtk::RESPONSE_OK, params.has_value());
+    set_response_sensitive(Gtk::ResponseType::OK, params.has_value());
+#endif /* GTK4_PORT_DONE */
 }
 /*----------------------------------------------------------------------------*/
 } /* namespace YUV_tool */

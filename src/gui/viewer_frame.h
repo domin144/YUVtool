@@ -23,8 +23,9 @@
 #ifdef GTK4_PORT_DONE
 #include <scroll_adapter.h>
 #include <drawer_gl.h>
-#include <yuv/Yuv_file.h>
 #endif /* GTK4_PORT_DONE */
+#include <resolution_and_format_dialog.h>
+#include <yuv/Yuv_file.h>
 
 #include <giomm/simpleactiongroup.h>
 #include <glibmm/refptr.h>
@@ -63,16 +64,14 @@ private:
     Glib::RefPtr<Gio::SimpleActionGroup> m_help_action_group;
     Glib::RefPtr<Gtk::Builder> m_builder;
     Gtk::Box m_box;
-#ifdef GTK4_PORT_DONE
     Yuv_file m_yuv_file;
+#ifdef GTK4_PORT_DONE
     Drawer_gl m_drawer_gl;
     Scroll_adapter m_scroll_adapter;
 #endif /* GTK4_PORT_DONE */
     Glib::RefPtr<Gtk::MessageDialog> m_message_dialog;
     Glib::RefPtr<Gtk::FileChooserDialog> m_file_dialog;
-#ifdef GTK4_PORT_DONE
     Glib::RefPtr<Resolution_and_format_dialog> m_format_dialog;
-#endif /* GTK4_PORT_DONE */
 };
 
 } /* namespace YUV_tool */

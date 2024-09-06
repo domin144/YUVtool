@@ -20,8 +20,11 @@
 #ifndef RESOLUTION_AND_FORMAT_DIALOG_H
 #define RESOLUTION_AND_FORMAT_DIALOG_H
 
+#include "gtkmm/enums.h"
+#ifdef GTK4_PORT_DONE
 #include <format_chooser_widget.h>
 #include <resolution_chooser_widget.h>
+#endif /* GTK4_PORT_DONE */
 #include <yuv/Pixel_format.h>
 
 #include <gtkmm/dialog.h>
@@ -31,10 +34,12 @@ namespace YUV_tool {
 class Resolution_and_format_dialog : public Gtk::Dialog
 {
 private:
-    Gtk::Box m_box {Gtk::ORIENTATION_VERTICAL};
+    Gtk::Box m_box {Gtk::Orientation::VERTICAL};
 
+#ifdef GTK4_PORT_DONE
     Format_chooser_widget m_format_widget;
     Resolution_chooser_widget m_resolution_widget;
+#endif /* GTK4_PORT_DONE */
 
     sigc::signal<void()> m_signal_pixel_format_changed;
     sigc::signal<void()> m_signal_resolution_changed;

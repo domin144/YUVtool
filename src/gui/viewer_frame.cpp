@@ -265,9 +265,7 @@ void Viewer_frame::on_file_dialog_finish(const int response_id)
 
     try
     {
-#ifdef GTK4_PORT_DONE
         m_yuv_file.open(file_name);
-#endif /* GTK4_PORT_DONE */
     }
     catch(std::runtime_error &e)
     {
@@ -277,14 +275,12 @@ void Viewer_frame::on_file_dialog_finish(const int response_id)
     m_file_dialog->hide();
     m_file_dialog.reset();
 
-#ifdef GTK4_PORT_DONE
     m_format_dialog = std::make_shared<Resolution_and_format_dialog>(*this);
     m_format_dialog->set_pixel_format(m_yuv_file.get_pixel_format());
     m_format_dialog->set_resolution(m_yuv_file.get_resolution());
     m_format_dialog->signal_response().connect(
         sigc::mem_fun(*this, &Viewer_frame::on_format_dialog_finish));
     m_format_dialog->show();
-#endif /* GTK4_PORT_DONE */
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_format_dialog_finish(const int response_id)
@@ -292,22 +288,20 @@ void Viewer_frame::on_format_dialog_finish(const int response_id)
     switch (response_id)
     {
     case Gtk::ResponseType::OK:
-#ifdef GTK4_PORT_DONE
         m_yuv_file.set_resolution(m_format_dialog->get_resolution());
         m_yuv_file.set_pixel_format(m_format_dialog->get_pixel_format());
+#ifdef GTK4_PORT_DONE
         m_scroll_adapter.set_internal_size(m_yuv_file.get_resolution());
-        break;
 #endif /* GTK4_PORT_DONE */
+        break;
     case Gtk::ResponseType::CANCEL:
-        return;
+        break;
     default:
         std::cerr << "unknown responce of format chooser dialog\n";
-        return;
+        break;
     }
-#ifdef GTK4_PORT_DONE
     m_format_dialog->hide();
-    m_format_dialog->reset();
-#endif /* GTK4_PORT_DONE */
+    m_format_dialog.reset();
 }
 //------------------------------------------------------------------------------
 void Viewer_frame::on_action_file_close()
