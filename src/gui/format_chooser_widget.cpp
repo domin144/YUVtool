@@ -19,7 +19,6 @@
  */
 #include "gtkmm/enums.h"
 #include <format_chooser_widget.h>
-#include <gtkmm-3.0/gtkmm/enums.h>
 
 namespace YUV_tool {
 /*----------------------------------------------------------------------------*/
